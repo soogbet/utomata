@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>utomata output</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+		<style media="screen">
+      html,body,div,form,fieldset,legend,label{margin:0;padding:0;}table{border-collapse:collapse;border-spacing:0;}th,td{text-align:left;vertical-align:top;}h1,h2,h3,h4,h5,h6,th,td,caption{font-weight:normal;}img{border:0;}
+			html,body{background:#333;}
+			canvas{display:block;image-rendering: pixelated;}
+    </style>
+	</head>
+	<body>
+		<canvas id="utoCanvas" width="300" height="300"></canvas>
+		<script src="utomata.js"></script>
+		<script>
+			var pgm = "V = sgn(eql(3.0, T8+V) + (eql(4.0, T8+V) * V));";
+			var uto = new Utomata("utoCanvas");
+			uto.setSize(2048, 2048);
+			uto.set();
+			uto.run(pgm);
+		</script>
+	</body>
+</html>
