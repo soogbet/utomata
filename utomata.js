@@ -8,9 +8,10 @@
 */
 
 /*
-  TODO:
-*/
 
+BUG: the initial width and height cannot be overriden upwards
+
+*/
 
 function Utomata(canvasID)
 {
@@ -27,24 +28,23 @@ function Utomata(canvasID)
   var currentProgram;
   var errorStack = [];
 
-  var fps, fpsInterval, startTime, now, then, elapsed, actualFPS, avgFps;
+  var fps, fpsInterval, now, then, elapsed, actualFPS, avgFps = 0;
 
-  var canvas, gl, buffer, vertexPosition;
+  var gl, buffer, vertexPosition;
   var frontTarget, backTarget, screenProgram, startFrag, fragVars;
-
-  var errorLines = [];
 
   var hasInputImage = false;
   var inputImage;
 
-  var edgeType;
   var isPowerOfTwoCanvas = false;
 
   var animationFrameIndex;
+  var updateEvent = new Event("update");
 
   var params = {
-    columns: 1024,
-    rows: 1024,
+    edgeType: "",
+    width: 2048,
+    height: 2048,
     startTime: Date.now(),
     time: 0,
     mouseX: 0,
@@ -56,11 +56,60 @@ function Utomata(canvasID)
   }
 
   /////////////////////////////////////////////////
+  // CANVAS
+
+  var canvas = document.getElementById( canvasID );
+
+  canvas.addEventListener( 'mousedown', function ( event ) {
+    params.mouseDown = 1;
+  }, false );
+
+  canvas.addEventListener( 'mouseup', function ( event ) {
+    params.mouseDown = 0;
+  }, false );
+
+  canvas.addEventListener( 'mouseover', function ( event ) {
+    params.mouseOver = 1;
+  }, false );
+
+  canvas.addEventListener( 'mouseout', function ( event ) {
+    params.mouseOver = 0;
+  }, false );
+
+  canvas.addEventListener( 'mousemove', function ( event ) {
+
+    var rect = canvas.getBoundingClientRect();
+
+    var ratioW = parseInt(canvas.style.width, 10) / canvas.width;
+    var ratioH = parseInt(canvas.style.height, 10) / canvas.height;
+
+    var clientX = (event.clientX - rect.left) / ratioW;
+    var clientY = (event.clientY - rect.top) / ratioH;
+
+    params.mouseX = clientX / canvas.width;
+    params.mouseY = 1- ( (clientY) / (canvas.height) )  ;
+
+  }, false );
+
+  /////////////////////////////////////////////////
   // INIT
 
-  canvas = document.getElementById( canvasID );
+  this.setup = function(wid, hei){
 
-  this.set = function(){
+    if(wid === undefined || hei === undefined){
+      // ?
+    }else{
+      params.width = wid;
+      params.height = hei;
+
+      // make sure there is an initial css value
+      canvas.style.width = params.width + 'px';
+      canvas.style.height = params.height + 'px';
+    }
+
+    canvas.width = params.width;
+    canvas.height = params.height;
+
     // Initialise WebGL
     try {
       gl = canvas.getContext( 'experimental-webgl', {preserveDrawingBuffer: true} );
@@ -76,48 +125,13 @@ function Utomata(canvasID)
     gl.bindBuffer( gl.ARRAY_BUFFER, buffer );
     gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( [ - 1.0, - 1.0, 1.0, - 1.0, - 1.0, 1.0, 1.0, - 1.0, 1.0, 1.0, - 1.0, 1.0 ] ), gl.STATIC_DRAW );
 
-    edgeType = gl.CLAMP_TO_EDGE;
-
-    canvas.addEventListener( 'mousedown', function ( event ) {
-      params.mouseDown = 1;
-    }, false );
-
-    canvas.addEventListener( 'mouseup', function ( event ) {
-      params.mouseDown = 0;
-    }, false );
-
-    canvas.addEventListener( 'mouseover', function ( event ) {
-      params.mouseOver = 1;
-    }, false );
-
-    canvas.addEventListener( 'mouseout', function ( event ) {
-      params.mouseOver = 0;
-    }, false );
-
-    canvas.addEventListener( 'mousemove', function ( event ) {
-
-      var rect = canvas.getBoundingClientRect();
-
-      var ratioW = parseInt(canvas.style.width, 10) / canvas.width;
-      var ratioH = parseInt(canvas.style.height, 10) / canvas.height;
-
-      var clientX = (event.clientX - rect.left) / ratioW;
-      var clientY = (event.clientY - rect.top) / ratioH;
-
-      params.mouseX = clientX / canvas.width;
-      params.mouseY = 1- ( (clientY) / (canvas.height) )  ;
-
-    }, false );
-
-    // make sure there is an initial css value
-    canvas.style.width = params.rows + 'px';
-    canvas.style.height = params.columns + 'px';
+    params.edgeType = gl.CLAMP_TO_EDGE;
 
     step = 0;
     fps = 60;
     fpsInterval = 1000 / fps;
     then = Date.now();
-    startTime = then;
+    params.startTime = then;
 
     this.createRenderTargets();
     this.compileScreenProgram();
@@ -128,7 +142,7 @@ function Utomata(canvasID)
   // RUN
   this.run = function(pgm){
 
-    if(!isSet)this.set();
+    if(!isSet)this.setup();
 
     if(pgm === undefined){
       pgm = lastPgm;
@@ -143,25 +157,118 @@ function Utomata(canvasID)
     this.animate();
   }
 
-  this.setFps = function(_fps){
-    fps = _fps;
-    fpsInterval = 1000 / fps;
+  // pause
+  this.stop = function(){
+    running = false;
+    this.dispatchEvent(updateEvent);
   }
 
-  this.setSize = function(_rows, _cols){
 
-    params.rows = _rows;
-    params.columns = _cols;
 
-    canvas.width = params.rows;
-    canvas.height = params.columns;
-    isSet = false;
+  //////////////////////////////////////////////////////////////////
+  // SETTERS
+
+
+  this.setEdgeType = function(type){
+    // TODO: test is ^2? and return
+    if(type == "CLAMP_TO_EDGE"){
+      params.edgeType = gl.CLAMP_TO_EDGE;
+    }else if(type == "REPEAT"){
+      params.edgeType = gl.REPEAT;
+    }
+  }
+
+  this.setFps = function(_fps){
+    fps = _fps;
+    fpsInterval = 1000.0 / fps;
+  }
+
+  this.setWidth = function(wid){
+    this.setSize(wid, params.height );
+  }
+
+  this.setHeight = function(hei){
+    this.setSize(params.width, hei );
+  }
+
+  this.setSize = function(wid, hei){
+    this.stop();
+
+    this.setup(wid, hei);
     this.run();
   }
 
-  this.stop = function(){
-    running = false;
+  this.setMouseColor = function( r,g,b,a){
+    params.mouseColor = [r,g,b,a];
   }
+
+  this.setMouseRadius = function( rad){
+    params.mouseRadius = rad;
+  }
+
+  // set Input image with url
+  this.setInput = function(url) {
+
+    inputImage = new Image();
+    inputImage.crossOrigin = "";
+    inputImage.src = url;
+    inputImage.onload = function() {
+
+      var width = this.width;
+      var height = this.height;
+      utomata.setTargetsToImage();
+      step = 0;
+    };
+  }
+
+  //////////////////////////////////////////////////////////////////
+  // GETTERS
+
+  this.getInfo = function(){
+    var res = "";
+    res += " ( " + params.width + " by " + params.height + " ) | ";
+    if(running){
+      res += "Running at " + avgFps + " fps | "
+    }else{
+      res += "Paused | "
+    }
+    res += "step: "+step+" | "
+    if(running){
+      res += "mouse: ("+ decimal(params.mouseX, 4) +", " + decimal(params.mouseY, 4) +")";
+    }
+
+    return res;
+  }
+
+  this.getErrors = function(){
+      if(errorStack.length == 0){
+        return "";
+      }
+      // return just the first one
+      return errorStack[0];
+  }
+
+  this.getWidth = function(){
+    return params.width;
+  }
+
+  this.getHeight = function(){
+    return params.height;
+  }
+
+  this.getMouseX = function(){
+    return params.mouseX;
+  }
+
+  this.getMouseY = function(){
+    return params.mouseY;
+  }
+
+
+
+  //////////////////////////////////////////////////////////////////
+  // RENDERING
+
 
   this.animate = function(){
     animationFrameIndex = requestAnimationFrame( _this.animate );
@@ -175,42 +282,12 @@ function Utomata(canvasID)
         actualFPS = decimal(1/(elapsed/1000),0);
         avgFps += decimal((actualFPS - avgFps) / 10 ,0);
 
+        _this.dispatchEvent(updateEvent);
         _this.render();
       }
     }
   }
 
-  this.getInfo = function(){
-    var res = "";
-    if(running){
-      res += "running | "
-    }else{
-      res += "paused | "
-    }
-    res += "system: ( " + params.rows + " by " + params.columns + " ) | ";
-    res += "step: "+step+" | "
-    res += "fps: "+avgFps+" | "
-    res += "mouse: ("+ decimal(params.mouseX, 4) +", " + decimal(params.mouseY, 4) +")";
-
-    return res;
-  }
-
-  this.getErrors = function(){
-      if(errorStack.length == 0){
-        return "";
-      }
-      // return just the first one
-      return errorStack[0];
-  }
-
-
-  this.getRows = function(){
-    return params.rows;
-  }
-
-  this.getColumns = function(){
-    return params.columns;
-  }
 
   this.compile = function(pgm) {
 
@@ -270,7 +347,7 @@ function Utomata(canvasID)
     gl.useProgram( currentProgram );
     gl.uniform1f( currentProgram.uniformsCache[ 'time' ], params.time / 1000 );
     gl.uniform2f( currentProgram.uniformsCache[ 'mouse' ], params.mouseX, params.mouseY );
-    gl.uniform2f( currentProgram.uniformsCache[ 'resolution' ], params.rows, params.columns );
+    gl.uniform2f( currentProgram.uniformsCache[ 'resolution' ], params.width, params.height );
     gl.uniform1i( currentProgram.uniformsCache[ 'backbuffer' ], 0 );
     gl.uniform1i( currentProgram.uniformsCache[ 'neighbourhood' ], params.neighbourhood );
     gl.uniform1i( currentProgram.uniformsCache[ 'mouseDown' ], params.mouseDown );
@@ -288,7 +365,7 @@ function Utomata(canvasID)
 
     // Set uniforms for screen shader
     gl.useProgram( screenProgram );
-    gl.uniform2f( screenProgram.uniformsCache[ 'resolution' ], params.rows, params.columns );
+    gl.uniform2f( screenProgram.uniformsCache[ 'resolution' ], params.width, params.height );
     gl.uniform1i( screenProgram.uniformsCache[ 'texture' ], 1 );
     gl.activeTexture( gl.TEXTURE1 );
     gl.bindTexture( gl.TEXTURE_2D, frontTarget.texture );
@@ -367,8 +444,8 @@ function Utomata(canvasID)
 
 
   this.createRenderTargets = function() {
-    frontTarget = this.createBackTarget(params.rows, params.columns );
-    backTarget = this.createBackTarget(params.rows, params.columns );
+    frontTarget = this.createBackTarget(params.width, params.height );
+    backTarget = this.createBackTarget(params.width, params.height );
   }
 
   this.createBackTarget = function(width, height ) {
@@ -381,8 +458,8 @@ function Utomata(canvasID)
     gl.bindTexture( gl.TEXTURE_2D, target.texture );
     gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null );
 
-    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, edgeType  );
-    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, edgeType  );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, params.edgeType  );
+    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, params.edgeType  );
 
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
@@ -403,21 +480,6 @@ function Utomata(canvasID)
     return target;
   }
 
-
-  // set Input image with url
-  this.setInput = function(url) {
-
-    inputImage = new Image();
-    inputImage.crossOrigin = "";
-    inputImage.src = url;
-    inputImage.onload = function() {
-
-      var width = this.width;
-      var height = this.height;
-      utomata.setTargetsToImage();
-      step = 0;
-    };
-  }
 
   this.setTargetsToImage = function(){
       if(inputImage == null || inputImage == undefined){
@@ -447,7 +509,7 @@ function Utomata(canvasID)
       // set up renderbuffer
       gl.bindRenderbuffer( gl.RENDERBUFFER, target.renderbuffer );
 
-      gl.renderbufferStorage( gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, params.rows, params.columns );
+      gl.renderbufferStorage( gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, params.width, params.height );
       gl.framebufferRenderbuffer( gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, target.renderbuffer );
 
       // clean up
@@ -457,7 +519,7 @@ function Utomata(canvasID)
 
       // set render targets
       backTarget = target;
-      frontTarget = this.createBackTarget(params.rows, params.columns );
+      frontTarget = this.createBackTarget(params.width, params.height );
       hasInputImage = true;
   }
 
@@ -467,14 +529,6 @@ function Utomata(canvasID)
 
     var line, lineNum, lineError, index = 0, indexEnd;
     var linesInETCfrag = this.getUtomataFragStart().split('\n').length - 1 ;
-
-    // while (errorLines.length > 0) {
-    //   line = errorLines.pop();
-    //   editor.setLineClass(line, null);
-    //   editor.clearMarker(line);
-    // }
-    //
-    // if (errorLines.length == 0) { $("#console").hide();};
 
     gl.shaderSource( shader, src );
     gl.compileShader( shader );
@@ -503,11 +557,6 @@ function Utomata(canvasID)
             index = indexEnd + 1;
             indexEnd = error.indexOf("ERROR: 0:", index);
             lineError = htmlEncode((indexEnd > index) ? error.substring(index, indexEnd) : error.substring(index));
-
-            //line = editor.setMarker(lineNum - 1, '<abbr title="' + lineError + '">' + lineNum + '</abbr>', "errorMarker");
-            //editor.setLineClass(line, "errorLine");
-            //errorLines.push(line);
-
             errorStack.push("ERROR in Line " +lineNum+" >> "+ lineError);
           }
         }
