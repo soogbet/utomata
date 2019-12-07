@@ -42,7 +42,7 @@ function Utomata(canvasID)
   var updateEvent = new Event("update");
 
   var params = {
-    edgeType: "",
+    edgeType: 0,
     width: 2048,
     height: 2048,
     startTime: Date.now(),
@@ -52,7 +52,7 @@ function Utomata(canvasID)
     mouseDown: 0,
     mouseOver: 0,
     mouseRadius: 1.0,
-    mouseColor:[ 1.0, 1.0, 1.0, 1.0 ]
+    mouseColor:{r:1.0, g:1.0, b:1.0, a:1.0}
   }
 
   /////////////////////////////////////////////////
@@ -125,7 +125,9 @@ function Utomata(canvasID)
     gl.bindBuffer( gl.ARRAY_BUFFER, buffer );
     gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( [ - 1.0, - 1.0, 1.0, - 1.0, - 1.0, 1.0, 1.0, - 1.0, 1.0, 1.0, - 1.0, 1.0 ] ), gl.STATIC_DRAW );
 
-    params.edgeType = gl.CLAMP_TO_EDGE;
+    if (params.edgeType == 0) {
+      params.edgeType = gl.CLAMP_TO_EDGE;
+    }
 
     step = 0;
     fps = 60;
@@ -168,7 +170,6 @@ function Utomata(canvasID)
   //////////////////////////////////////////////////////////////////
   // SETTERS
 
-
   this.setEdgeType = function(type){
     // TODO: test is ^2? and return
     if(type == "CLAMP_TO_EDGE"){
@@ -198,8 +199,8 @@ function Utomata(canvasID)
     this.run();
   }
 
-  this.setMouseColor = function( r,g,b,a){
-    params.mouseColor = [r,g,b,a];
+  this.setMouseColor = function(hex){
+    params.mouseColor = hexToRgb(hex);
   }
 
   this.setMouseRadius = function( rad){
@@ -353,7 +354,7 @@ function Utomata(canvasID)
     gl.uniform1i( currentProgram.uniformsCache[ 'mouseDown' ], params.mouseDown );
     gl.uniform1i( currentProgram.uniformsCache[ 'centerPoint' ], params.centerPoint );
     gl.uniform1f( currentProgram.uniformsCache[ 'mouseRadius' ], params.mouseRadius );
-    gl.uniform4f( currentProgram.uniformsCache[ 'mouseColor' ], params.mouseColor[0], params.mouseColor[1], params.mouseColor[2], params.mouseColor[3] );
+    gl.uniform4f( currentProgram.uniformsCache[ 'mouseColor' ], params.mouseColor.r, params.mouseColor.g, params.mouseColor.b, params.mouseColor.a );
 
     gl.activeTexture( gl.TEXTURE0 );
     gl.bindTexture( gl.TEXTURE_2D, backTarget.texture );
@@ -544,8 +545,6 @@ function Utomata(canvasID)
 
       errorStack = [];
 
-      //$("#console").fadeIn('fast');
-
       while (index >= 0) {
         index = error.indexOf("ERROR: 0:", index);
         if (index < 0) { break; }
@@ -590,6 +589,16 @@ function Utomata(canvasID)
       var a = Math.pow(10,d);
       return Math.round(n * a) / a;
   }
+
+  function hexToRgb(hex) {
+  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  return result ? {
+    r: parseInt(result[1], 16)/255,
+    g: parseInt(result[2], 16)/255,
+    b: parseInt(result[3], 16)/255,
+    a: 1.0
+  } : null;
+}
 
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -1046,7 +1055,7 @@ function Utomata(canvasID)
 
           float mouseDist = distance(mouse.xy * resolution, gl_FragCoord.xy);
           if (mouseDown == 1 && mouseDist <= mouseRadius + 0.5) {
-            V = vec4(1.0);
+            V = mouseColor;
           }
         }
 
