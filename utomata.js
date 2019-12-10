@@ -43,8 +43,8 @@ function Utomata(canvasID)
 
   var params = {
     edgeType: 0,
-    width: 2048,
-    height: 2048,
+    width: 512,
+    height: 512,
     startTime: Date.now(),
     time: 0,
     mouseX: 0,
@@ -110,13 +110,15 @@ function Utomata(canvasID)
     canvas.width = params.width;
     canvas.height = params.height;
 
+    isPowerOfTwoCanvas = (this.isPowerOfTwo(canvas.width) && this.isPowerOfTwo(canvas.height));
+
     // Initialise WebGL
     try {
       gl = canvas.getContext( 'experimental-webgl', {preserveDrawingBuffer: true} );
     } catch( error ) { }
 
     if ( !gl ) {
-      alert("WebGL not supported on this browser. Please use Chrome/Safari/Firefox");
+      alert("Sorry, Utomata need a WebGL enabled browser. Please use Chrome/Safari/Firefox");
       throw "cannot create webgl context";
     }
 
@@ -135,11 +137,14 @@ function Utomata(canvasID)
     then = Date.now();
     params.startTime = then;
 
+    gl.viewport( 0, 0, canvas.width, canvas.height );
+
     this.createRenderTargets();
     this.compileScreenProgram();
 
     isSet = true;
   }
+
 
   // RUN
   this.run = function(pgm){
@@ -171,11 +176,10 @@ function Utomata(canvasID)
   // SETTERS
 
   this.setEdgeType = function(type){
-    // TODO: test is ^2? and return
-    if(type == "CLAMP_TO_EDGE"){
-      params.edgeType = gl.CLAMP_TO_EDGE;
-    }else if(type == "REPEAT"){
+    if(type == "REPEAT" && isPowerOfTwoCanvas){
       params.edgeType = gl.REPEAT;
+    }else{
+      params.edgeType = gl.CLAMP_TO_EDGE;
     }
   }
 
@@ -190,13 +194,6 @@ function Utomata(canvasID)
 
   this.setHeight = function(hei){
     this.setSize(params.width, hei );
-  }
-
-  this.setSize = function(wid, hei){
-    this.stop();
-
-    this.setup(wid, hei);
-    this.run();
   }
 
   this.setMouseColor = function(hex){
@@ -257,12 +254,20 @@ function Utomata(canvasID)
     return params.height;
   }
 
+  this.getEdgeType = function(){
+    return params.edgeType;
+  }
+
   this.getMouseX = function(){
     return params.mouseX;
   }
 
   this.getMouseY = function(){
     return params.mouseY;
+  }
+
+  this.getIsPowTwo = function(){
+    return isPowerOfTwo;
   }
 
 
@@ -283,7 +288,7 @@ function Utomata(canvasID)
         actualFPS = decimal(1/(elapsed/1000),0);
         avgFps += decimal((actualFPS - avgFps) / 10 ,0);
 
-        _this.dispatchEvent(updateEvent);
+        dispatchEvent(updateEvent);
         _this.render();
       }
     }
@@ -591,14 +596,21 @@ function Utomata(canvasID)
   }
 
   function hexToRgb(hex) {
-  var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-  return result ? {
-    r: parseInt(result[1], 16)/255,
-    g: parseInt(result[2], 16)/255,
-    b: parseInt(result[3], 16)/255,
-    a: 1.0
-  } : null;
-}
+    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+    return result ? {
+      r: parseInt(result[1], 16)/255,
+      g: parseInt(result[2], 16)/255,
+      b: parseInt(result[3], 16)/255,
+      a: 1.0
+    } : null;
+  }
+
+  function isPowerOfTwo(x){
+    while (((x % 2) == 0) && x > 1){
+      x /= 2;
+    } /* While x is even and > 1 */
+    return (x == 1);
+  }
 
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
@@ -982,62 +994,45 @@ function Utomata(canvasID)
     // int mx(int a){return a;}
 
 
+    vec4 val(float _x, float _y){
+      return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution) * vec2(_x, _y)));
+    }
+
     //////////////////////////////////////////////////////////////////////
     void main()
       {
 
-        vec2 texCoord = (gl_FragCoord.xy) / resolution.xy;
-        vec4 V = texture2D(backbuffer, texCoord);
+        vec2 coord = (gl_FragCoord.xy) / resolution.xy;
         vec2 pixel = 1.0/resolution;
-
+        float ratio = resolution.x/resolution.y;
         bool useMouse = true;
         bool useAlpha = false;
 
-        float aspect = resolution.x/resolution.y;
+        vec4 V = val(0.,0.);
+        vec4 V2 = val(0., 1.) + val(0.,-1.);
+        vec4 V3 = val(-1., -1.) + val(0., -1.) + val(1., -1.);
+        vec4 V4 = val(0., -1.) + val(0.,1.) + val(-1., 0.) + val(1.,0.);
+        vec4 V5 = V + V4;
+        vec4 V6 = val(-1., -1.) + val( 0., -1.) + val( 1., -1.) + val(-1., 1.) + val( 0., 1.) + val( 1., 1.);
+        vec4 V7 = V + V6;
+        vec4 V8 = V4 + val(-1., -1.) + val( 1., -1.) + val(-1., 1.) + val( 1., 1.);
+        vec4 V9 = V + V8;
+        vec4 V10 = V8 + val(0., -2.) + val(0., 2.);
+        vec4 V11 = V10 + V;
+        vec4 V12 = V10 + val(-2., 0.) + val(2., 0.);
+        vec4 V13 = V12 + V;
+        vec4 V14 = V12 + val(0., -3.) + val(0., 3.);
+        vec4 V15 = V14 + V;
+        vec4 V16 = V14 + val(-3., 0.) + val(3., 0.);
+        vec4 V17 = V16 + V;
 
-        vec4 NN[24];
-        // T4 Von-Neumann
-        NN[0] = texture2D(backbuffer, texCoord + (pixel * vec2(-1.,0)));
-        NN[1] = texture2D(backbuffer, texCoord + (pixel * vec2(1.,0)));
-        NN[2] = texture2D(backbuffer, texCoord + (pixel * vec2(0,-1.)));
-        NN[3] = texture2D(backbuffer, texCoord + (pixel * vec2(0,1.)));
-        // T8 Moore
-        NN[4] = texture2D(backbuffer, texCoord + (pixel * vec2(-1.,-1.)));
-        NN[5] = texture2D(backbuffer, texCoord + (pixel * vec2(1.,1.)));
-        NN[6] = texture2D(backbuffer, texCoord + (pixel * vec2(1.,-1.)));
-        NN[7] = texture2D(backbuffer, texCoord + (pixel * vec2(-1.,1.)));
-
-        // T12 Von-Neumann r=2
-        NN[8] = texture2D(backbuffer, texCoord + (pixel * vec2(-0.,-2.)));
-        NN[9] = texture2D(backbuffer, texCoord + (pixel * vec2(-2.,0.)));
-        NN[10] = texture2D(backbuffer, texCoord + (pixel * vec2(2.,0.)));
-        NN[11] = texture2D(backbuffer, texCoord + (pixel * vec2(0.,2.)));
-
-        // T20 almost extended Moore
-        NN[12] = texture2D(backbuffer, texCoord + (pixel * vec2(1.,2.)));
-        NN[13] = texture2D(backbuffer, texCoord + (pixel * vec2(-1.,-2.)));
-        NN[14] = texture2D(backbuffer, texCoord + (pixel * vec2(1.,-2.)));
-        NN[15] = texture2D(backbuffer, texCoord + (pixel * vec2(-1.,2.)));
-
-        NN[16] = texture2D(backbuffer, texCoord + (pixel * vec2(2.,1.)));
-        NN[17] = texture2D(backbuffer, texCoord + (pixel * vec2(-2.,-1.)));
-        NN[18] = texture2D(backbuffer, texCoord + (pixel * vec2(2.,-1.)));
-        NN[19] = texture2D(backbuffer, texCoord + (pixel * vec2(-2.,1.)));
-
-        // T24 extended Moore
-        NN[20] = texture2D(backbuffer, texCoord + (pixel * vec2(2.,2.)));
-        NN[21] = texture2D(backbuffer, texCoord + (pixel * vec2(-2.,-2.)));
-        NN[22] = texture2D(backbuffer, texCoord + (pixel * vec2(-2.,2.)));
-        NN[23] = texture2D(backbuffer, texCoord + (pixel * vec2(2.,-2.)));
-
-        vec4 T4 = NN[0] + NN[1] + NN[2] + NN[3];
-        vec4 T8 = NN[0] + NN[1] + NN[2] + NN[3] + NN[4] + NN[5] + NN[6] + NN[7];
-        vec4 T12 = T8 + NN[8] + NN[9] + NN[10] + NN[11];
-        vec4 T20 = T12 + NN[12] + NN[13] + NN[14] + NN[15] + NN[16] + NN[17] + NN[18] + NN[19];
-        vec4 T24 = T20 + NN[20] + NN[21] + NN[22] + NN[23];
-
+        // vec4 T4 = NN[0] + NN[1] + NN[2] + NN[3];
+        // vec4 T8 = NN[0] + NN[1] + NN[2] + NN[3] + NN[4] + NN[5] + NN[6] + NN[7];
+        // vec4 T12 = T8 + NN[8] + NN[9] + NN[10] + NN[11];
+        // vec4 T20 = T12 + NN[12] + NN[13] + NN[14] + NN[15] + NN[16] + NN[17] + NN[18] + NN[19];
+        // vec4 T24 = T20 + NN[20] + NN[21] + NN[22] + NN[23];
         // my new experimental neighbourhood:
-        vec4 T = T4 + (T8-T4)*0.5 + (T12-T8)*0.25 + (T20-T12)*0.125;
+        //vec4 VB = V4 + (V8-V4)*0.5 + (V12-V8)*0.25 + (V20-V12)*0.125;
 
         //////////////////////////////////////////
 
@@ -1052,14 +1047,15 @@ function Utomata(canvasID)
         //////////////////////////////////////////
 
         if(useMouse){
-
           float mouseDist = distance(mouse.xy * resolution, gl_FragCoord.xy);
           if (mouseDown == 1 && mouseDist <= mouseRadius + 0.5) {
             V = mouseColor;
           }
         }
 
-        V.a = 1.0;
+        if(!useAlpha){
+            V.a = 1.0;
+        }
 
         gl_FragColor = V;
       }

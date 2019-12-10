@@ -17,7 +17,7 @@
 		<script>
 			var uto = new Utomata("utoCanvas");
 			uto.setup(1024, 1024);
-			uto.run("V = sgn(eql(3.0, T8+V) + (eql(4.0, T8+V) * V));");
+			uto.run("V = eql(3.0, V9) + (eql(4.0, V9) * V);");
 		</script>
 
 	</body>
