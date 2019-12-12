@@ -14,10 +14,25 @@
 
 		<canvas id="utoCanvas"></canvas>
 		<script src="../utomata.js"></script>
+
 		<script>
 			var uto = new Utomata("utoCanvas");
-			uto.setup(1024, 1024);
+
+			// SETUP
+			//uto.setup(1024, 1024);
+
+			// SETUP WITH A CONFIGURATION VALUE
+			// (ie: a rounded random number is either 0 or 1.0)
+			uto.setup(1024, 1024, "vec4( rnd(random()) )" );
+
+			// SETUP from IMAGE
+			// (also resizes to the size of the image)
+			//uto.setInput("config.png");
+
+			// run program:
+			// (Conway's Game of Life)
 			uto.run("V = eql(3.0, V9) + (eql(4.0, V9) * V);");
+
 		</script>
 
 	</body>

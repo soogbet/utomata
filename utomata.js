@@ -52,7 +52,9 @@ function Utomata(canvasID)
     mouseDown: 0,
     mouseOver: 0,
     mouseRadius: 1.0,
-    mouseColor:{r:1.0, g:1.0, b:1.0, a:1.0}
+    mouseColor:{r:1.0, g:1.0, b:1.0, a:1.0},
+    doConfig: 0,
+    configRule: "vec4(0.0)"
   }
 
   /////////////////////////////////////////////////
@@ -94,7 +96,7 @@ function Utomata(canvasID)
   /////////////////////////////////////////////////
   // INIT
 
-  this.setup = function(wid, hei){
+  this.setup = function(wid, hei, configRule){
 
     if(wid === undefined || hei === undefined){
       // ?
@@ -105,6 +107,14 @@ function Utomata(canvasID)
       // make sure there is an initial css value
       canvas.style.width = params.width + 'px';
       canvas.style.height = params.height + 'px';
+    }
+
+    if(configRule === undefined){
+      params.doConfig = 0;
+      params.configRule = "vec4(0.0)";
+    }else{
+      params.doConfig = 1;
+      params.configRule = configRule;
     }
 
     canvas.width = params.width;
@@ -136,6 +146,7 @@ function Utomata(canvasID)
     fpsInterval = 1000 / fps;
     then = Date.now();
     params.startTime = then;
+
 
     gl.viewport( 0, 0, canvas.width, canvas.height );
 
@@ -188,14 +199,6 @@ function Utomata(canvasID)
     fpsInterval = 1000.0 / fps;
   }
 
-  this.setWidth = function(wid){
-    this.setSize(wid, params.height );
-  }
-
-  this.setHeight = function(hei){
-    this.setSize(params.width, hei );
-  }
-
   this.setMouseColor = function(hex){
     params.mouseColor = hexToRgb(hex);
   }
@@ -206,18 +209,17 @@ function Utomata(canvasID)
 
   // set Input image with url
   this.setInput = function(url) {
-
     inputImage = new Image();
     inputImage.crossOrigin = "";
     inputImage.src = url;
-    inputImage.onload = function() {
 
-      var width = this.width;
-      var height = this.height;
-      utomata.setTargetsToImage();
+    inputImage.onload = function() {
+      _this.setup(this.width, this.height );
+      _this.setTargetsToImage();
       step = 0;
     };
   }
+
 
   //////////////////////////////////////////////////////////////////
   // GETTERS
@@ -326,12 +328,12 @@ function Utomata(canvasID)
     this.cacheUniformLocation( program, 'time' );
     this.cacheUniformLocation( program, 'mouse' );
     this.cacheUniformLocation( program, 'mouseDown' );
+    this.cacheUniformLocation( program, 'doConfig' );
     this.cacheUniformLocation( program, 'centerPoint' );
     this.cacheUniformLocation( program, 'mouseRadius' );
     this.cacheUniformLocation( program, 'mouseColor' );
     this.cacheUniformLocation( program, 'resolution' );
     this.cacheUniformLocation( program, 'backbuffer' );
-    this.cacheUniformLocation( program, 'neighbourhood' );
     this.cacheUniformLocation( program, 'slider' );
 
     // Load program into GPU
@@ -348,6 +350,10 @@ function Utomata(canvasID)
 
     if ( !currentProgram ) return;
 
+    if(step > 0){
+        params.doConfig = 0;
+    }
+
     params.time = Date.now() - params.startTime;
     // Set uniforms for custom shader
     gl.useProgram( currentProgram );
@@ -355,8 +361,8 @@ function Utomata(canvasID)
     gl.uniform2f( currentProgram.uniformsCache[ 'mouse' ], params.mouseX, params.mouseY );
     gl.uniform2f( currentProgram.uniformsCache[ 'resolution' ], params.width, params.height );
     gl.uniform1i( currentProgram.uniformsCache[ 'backbuffer' ], 0 );
-    gl.uniform1i( currentProgram.uniformsCache[ 'neighbourhood' ], params.neighbourhood );
     gl.uniform1i( currentProgram.uniformsCache[ 'mouseDown' ], params.mouseDown );
+    gl.uniform1i( currentProgram.uniformsCache[ 'doConfig' ], params.doConfig );
     gl.uniform1i( currentProgram.uniformsCache[ 'centerPoint' ], params.centerPoint );
     gl.uniform1f( currentProgram.uniformsCache[ 'mouseRadius' ], params.mouseRadius );
     gl.uniform4f( currentProgram.uniformsCache[ 'mouseColor' ], params.mouseColor.r, params.mouseColor.g, params.mouseColor.b, params.mouseColor.a );
@@ -650,17 +656,16 @@ function Utomata(canvasID)
     precision highp int;
     precision highp float;
 
-      uniform float time;
-      uniform vec2 mouse;
-      uniform vec2 resolution;
-      uniform sampler2D backbuffer;
-      uniform int mouseDown;
-      uniform int centerPoint;
-      uniform float slider;
-      uniform float mouseRadius;
-      uniform vec4 mouseColor;
-      uniform int neighbourhood;
-
+    uniform float time;
+    uniform vec2 mouse;
+    uniform vec2 resolution;
+    uniform sampler2D backbuffer;
+    uniform int mouseDown;
+    uniform int doConfig;
+    uniform int centerPoint;
+    uniform float slider;
+    uniform float mouseRadius;
+    uniform vec4 mouseColor;
 
     // ETC functions
 
@@ -862,136 +867,13 @@ function Utomata(canvasID)
      vec4 atn(vec4 a, float b){return atan(a);}
 
 
-    //////////////////////////////////////////////////////////////////////
-    // INT OPERATIONS
-    //////////////////////////////////////////////////////////////////////
 
+    float random() {
 
-    // ADDITION
-    ivec4 add(ivec4 a, ivec4 b){return a + b;}
-    int add(int a, int b){return a + b;}
-
-    // SUBTRACTION
-    ivec4 sub(ivec4 a, ivec4 b){return a - b;}
-    int sub(int a, int b){return a - b;}
-
-    // MULTIPLICATION
-    ivec4 mlt(ivec4 a, ivec4 b){return a * b;}
-    int mlt(int a, int b){return a * b;}
-
-    // DIVISION
-    ivec4 div(ivec4 a, ivec4 b){return a / b;}
-    int div(int a, int b){return a / b;}
-
-
-    // // EXPONENTIATION
-    // ivec4 pw(int a, ivec4 b){return pow(ivec4(a), b);}
-    // ivec4 pw(ivec4 a, int b){return pow(a, ivec4(b));}
-    // ivec4 pw(ivec4 a, ivec4 b){return pow(a, b);}
-    // int pw(int a, int b){return pow(a, b);}
-
-    // // NATURAL LOGARITHM
-    // ivec4 lg(ivec4 a, ivec4 b){return log(a);}
-    // int lg(int a, int b){return log(a);}
-    // int lg(int a){return log(a);}
-    // int lg(int a, ivec4 b){return log(a);}
-    // ivec4 lg(ivec4 a, int b){return log(a);}
-
-    // // SQUARE ROOT
-    // ivec4 sqt(ivec4 a){return sqrt(a);}
-    // int sqt(int a){return sqrt(a);}
-    // ivec4 sqt(ivec4 a, ivec4 b){return sqrt(a);}
-    // int sqt(int a, int b){return sqrt(a);}
-    // int sqt(int a, ivec4 b){return sqrt(a);}
-    // ivec4 sqt(ivec4 a, int b){return sqrt(a);}
-
-    // SIGN
-    // ivec4 sgn(ivec4 a){return sign(a);}
-    // int sgn(int a){return sign(a);}
-    // ivec4 sgn(ivec4 a, ivec4 b){return sign(a);}
-    // int sgn(int a, int b){return sign(a);}
-    // int sgn(int a, ivec4 b){return sign(a);}
-    // ivec4 sgn(ivec4 a, int b){return sign(a);}
-
-    // // STEP
-    //ivec4 stp(ivec4 a, ivec4 b){return step(vec4(a),vec4(b));}
-    //int stp(int a, int b){return step(float(a),float(b));}
-
-
-    // ivec4 stp(int a, ivec4 b){return stp(ivec4(a), b);}
-    // ivec4 stp(ivec4 a, int b){return stp(a, ivec4(b));}
-    // ivec4 stp(ivec4 a){return a;}
-    // int stp(int a){return a;}
-
-    // // EQUALITY
-    // ivec4 eql(ivec4 a, ivec4 b){return step(a,b) * step(b,a);}
-    // int eql(int a, int b){return step(a,b) * step(b,a);}
-    // ivec4 eql(ivec4 a, int b){return step(a,ivec4(b)) * step(ivec4(b),a);}
-    // ivec4 eql(int a, ivec4 b){return step(ivec4(a),b) * step(b,ivec4(a));}
-    // ivec4 eql(ivec4 a){return ivec4(1.0);}
-    // int eql(int a){return 1.0;}
-
-    // // CEILING
-    // ivec4 cil(ivec4 a){return ceil(a);}
-    // int cil(int a){return ceil(a);}
-    // ivec4 cil(ivec4 a, ivec4 b){return ceil(a);}
-    // int cil(int a, int b){return ceil(a);}
-    // int cil(int a, ivec4 b){return ceil(a);}
-    // ivec4 cil(ivec4 a, int b){return ceil(a);}
-
-    // // FLOOR
-    // ivec4 flr(ivec4 a){return floor(a);}
-    // int flr(int a){return floor(a);}
-    // ivec4 flr(ivec4 a, ivec4 b){return floor(a);}
-    // int flr(int a, int b){return floor(a);}
-    // int flr(int a, ivec4 b){return floor(a);}
-    // ivec4 flr(ivec4 a, int b){return floor(a);}
-
-    // // ROUNDING
-    // ivec4 rnd(ivec4 a){return floor(a) + step(0.5,fract(a));}
-    // int rnd(int a){return floor(a) + step(0.5,fract(a));}
-    // ivec4 rnd(ivec4 a, ivec4 b){return floor(a) + step(0.5,fract(a));}
-    // int rnd(int a, int b){return floor(a) + step(0.5,fract(a));}
-    // int rnd(int a, ivec4 b){return floor(a) + step(0.5,fract(a));}
-    // ivec4 rnd(ivec4 a, int b){return floor(a) + step(0.5,fract(a));}
-
-    // ABSOLUTE VALUE
-    // ivec4 ab(ivec4 a, ivec4 b){return abs(a);}
-    // int ab(int a, int b){return abs(a);}
-    // int ab(int a, ivec4 b){return abs(a);}
-    // ivec4 ab(ivec4 a, int b){return abs(a);}
-
-    // // FRACTIONAL PART
-    // ivec4 frc(ivec4 a){return fract(a);}
-    // int frc(int a){return fract(a);}
-    // ivec4 frc(ivec4 a, ivec4 b){return fract(a);}
-    // int frc(int a, int b){return fract(a);}
-    // int frc(int a, ivec4 b){return fract(a);}
-    // ivec4 frc(ivec4 a, int b){return fract(a);}
-
-    // MODULO
-    // int md(int a, int b){return mod(a, b);}
-    // ivec4 md(int a, ivec4 b){return mod(ivec4(a), b);}
-    // ivec4 md(ivec4 a, ivec4 b){return mod(a, b);}
-    // ivec4 md(ivec4 a, int b){return mod(a, ivec4(b));}
-    // ivec4 md(ivec4 a){return ivec4(0.0);}
-    // int md(int a){return 0.0;}
-
-    // // MIN
-    // ivec4 mn(ivec4 a, ivec4 b){return min(a,b);}
-    // int mn(int a, int b){return min(a,b);}
-    // ivec4 mn(int a, ivec4 b){return min(ivec4(a), b);}
-    // ivec4 mn(ivec4 a, int b){return min(a, ivec4(b));}
-    // ivec4 mn(ivec4 a){return a;}
-    // int mn(int a){return a;}
-
-    // // MAX
-    // ivec4 mx(ivec4 a, ivec4 b){return max(a,b);}
-    // int mx(int a, int b){return max(a,b);}
-    // ivec4 mx(int a, ivec4 b){return max(ivec4(a), b);}
-    // ivec4 mx(ivec4 a, int b){return max(a, ivec4(b));}
-    // ivec4 mx(ivec4 a){return a;}
-    // int mx(int a){return a;}
+      vec2 st = (gl_FragCoord.xy) / resolution.xy;
+      return fract(sin(dot(st.xy,vec2(12.9898,78.233)))*43758.5453123);
+      
+    }
 
 
     vec4 val(float _x, float _y){
@@ -1057,9 +939,14 @@ function Utomata(canvasID)
             V.a = 1.0;
         }
 
+        if(doConfig == 1){
+          V = ` + params.configRule + `;
+        }
+
         gl_FragColor = V;
       }
     `;
+
     return res;
   }
 
