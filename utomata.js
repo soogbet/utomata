@@ -110,7 +110,7 @@ function Utomata(canvasID)
     canvas.width = params.width;
     canvas.height = params.height;
 
-    isPowerOfTwoCanvas = (this.isPowerOfTwo(canvas.width) && this.isPowerOfTwo(canvas.height));
+    isPowerOfTwoCanvas = isPowerOfTwo(canvas.width) && isPowerOfTwo(canvas.height);
 
     // Initialise WebGL
     try {
