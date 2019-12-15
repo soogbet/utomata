@@ -1,10 +1,10 @@
 
-#utomata.js
+# utomata.js
 
 utomata is a light weight, dependency-free javascript framework for cellular automata (CA). It uses WebGL for rendering onto the HTML canvas element, allowing browser based fast implementation of a wide range of CA algorithms at interactive speeds. The framework is designed for exploration of emergent behaviours towards art and design projects, as well as for procedural content generation.
 
 
-###Basic usage
+### Basic usage
 
 ```html
 <!-- add a link to utomata lib -->
