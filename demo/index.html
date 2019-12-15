@@ -7,31 +7,60 @@
 		<style media="screen">
       html,body,div,form,fieldset,legend,label{margin:0;padding:0;}table{border-collapse:collapse;border-spacing:0;}th,td{text-align:left;vertical-align:top;}h1,h2,h3,h4,h5,h6,th,td,caption{font-weight:normal;}img{border:0;}
 			html,body{background:#333;}
-			canvas{display:block;image-rendering: pixelated;}
-    </style>
-	</head>
-	<body>
 
-		<canvas id="utoCanvas"></canvas>
+			img, canvas{display:inline-block;image-rendering: pixelated; margin:4px;}
+
+			.btnContainer{position: fixed; top: 32px; left:32px;}
+
+    </style>
+
 		<script src="../utomata.js"></script>
 
+	</head>
+	<body>
+		<div class="btnContainer">
+			  <button id="resetRuleBtn" class="btn" type="button" name="button" onclick="utos[0].setup()">reset A</button>
+				<button id="resetRuleBtn" class="btn" type="button" name="button" onclick="utos[1].setup();">reset B</button>
+
+				<button id="resetRuleBtn" class="btn" type="button" name="button" onclick="document.body.appendChild(utos[1].getOutput())">save B</button>
+
+		</div>
+
 		<script>
-			var uto = new Utomata("utoCanvas");
 
-			// SETUP
-			//uto.setup(1024, 1024);
-
-			// SETUP WITH A CONFIGURATION VALUE
-			// (ie: a rounded random number is either 0 or 1.0)
-			uto.setup(1024, 1024, "vec4( rnd(random()) )" );
+			var utos = [ new Utomata(), new Utomata()];
 
 			// SETUP from IMAGE
 			// (also resizes to the size of the image)
 			//uto.setInput("config.png");
 
-			// run program:
-			// (Conway's Game of Life)
-			uto.run("V = eql(3.0, V9) + (eql(4.0, V9) * V);");
+			utos[0].setup(256, 256, "V= vec4( stp(random(), 0.5) );");
+
+			utos[1].setInput("config.png");
+			utos[1].setup();
+
+			utos[0].run("V = eql(3.0, V9) + (eql(4.0, V9) * V);");
+			utos[1].run("V = frc(V) + sgn(stp( vec4(0.2) , md(V4.rrgr, vec4(.88,.88,0,0)))) * (vec4(0.78, .0, 1.,0) + ((V4.rrgg - V4.bgrb) * vec4(1., 1., 0.,0)) - frc(V.rrbr)) * vec4(1., .9, 1., 0);");
+
+
+			// var uto = new Utomata();
+			//
+			// // SETUP from IMAGE
+			// // (also resizes to the size of the image)
+			// //uto.setInput("config.png");
+			// uto.setup(1024, 1024);
+			//
+			// // SIMPLE SETUP
+			// //uto.setup(512, 512);
+			//
+			// // SETUP WITH A CONFIGURATION VALUE
+			// // (ie: a rounded random number is either 0 or 1.0)
+			// //uto.setup(1024, 1024, "V= vec4( stp(random(), 0.1) );" );
+			//
+			// // run program:
+			// // (Conway's Game of Life)
+			// uto.run("V = eql(3.0, V9) + (eql(4.0, V9) * V);");
+
 
 		</script>
 

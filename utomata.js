@@ -22,21 +22,18 @@ function Utomata(canvasID)
 
   var isSet = false;
   var running = false;
-  var step = 0;
+  var step = 0, fps = 60, avgFps = 0, fpsInterval, now, then, elapsed, actualFPS;
 
   var lastPgm;
   var currentProgram;
   var errorStack = [];
 
-  var fps, fpsInterval, now, then, elapsed, actualFPS, avgFps = 0;
-
   var gl, buffer, vertexPosition;
-  var frontTarget, backTarget, screenProgram, startFrag, fragVars;
+  var frontTarget, backTarget, inputTarget, screenProgram, startFrag, fragVars;
 
-  var hasInputImage = false;
+  var hasInputImage = false, isPowerOfTwoCanvas = false;
   var inputImage;
-
-  var isPowerOfTwoCanvas = false;
+  var inputImageLoaded = false;
 
   var animationFrameIndex;
   var updateEvent = new Event("update");
@@ -54,13 +51,22 @@ function Utomata(canvasID)
     mouseRadius: 1.0,
     mouseColor:{r:1.0, g:1.0, b:1.0, a:1.0},
     doConfig: 0,
-    configRule: "vec4(0.0)"
+    configRule: "V= vec4(0.0);"
   }
 
   /////////////////////////////////////////////////
   // CANVAS
 
-  var canvas = document.getElementById( canvasID );
+  var canvas;
+
+  if(canvasID === undefined){
+    // create if none provided
+    canvas = document.createElement("canvas");
+    document.body.appendChild(canvas);
+  }else{
+    // assign to var using ID
+    canvas = document.getElementById( canvasID );
+  }
 
   canvas.addEventListener( 'mousedown', function ( event ) {
     params.mouseDown = 1;
@@ -96,10 +102,12 @@ function Utomata(canvasID)
   /////////////////////////////////////////////////
   // INIT
 
+
   this.setup = function(wid, hei, configRule){
 
+    // SIZE
     if(wid === undefined || hei === undefined){
-      // ?
+      // USE EXISTING PARAMS FOR SETUP
     }else{
       params.width = wid;
       params.height = hei;
@@ -109,20 +117,22 @@ function Utomata(canvasID)
       canvas.style.height = params.height + 'px';
     }
 
-    if(configRule === undefined){
-      params.doConfig = 0;
-      params.configRule = "vec4(0.0)";
-    }else{
-      params.doConfig = 1;
-      params.configRule = configRule;
-    }
-
     canvas.width = params.width;
     canvas.height = params.height;
 
     isPowerOfTwoCanvas = isPowerOfTwo(canvas.width) && isPowerOfTwo(canvas.height);
 
-    // Initialise WebGL
+    // CONFIG RULE
+    if(configRule === undefined){
+      if(params.configRule === undefined){
+        params.configRule = "vec4(0.0)";
+      }
+    }else{
+      params.configRule = configRule;
+    }
+
+
+    // INIT WEBGL
     try {
       gl = canvas.getContext( 'experimental-webgl', {preserveDrawingBuffer: true} );
     } catch( error ) { }
@@ -141,21 +151,38 @@ function Utomata(canvasID)
       params.edgeType = gl.CLAMP_TO_EDGE;
     }
 
+    gl.viewport( 0, 0, canvas.width, canvas.height );
+
+
+    if(!hasInputImage){
+      // no input image
+      this.createRenderTargets();
+      this.compileScreenProgram();
+      params.doConfig = 1;
+    }else{
+
+      if(!inputImageLoaded){
+        // has but not loaded
+        inputImage.onload = function() {
+          inputImageLoaded = true;
+          params.width = inputImage.width;
+          params.height = inputImage.height;
+          _this.setup();
+        };
+
+      }else{
+        // has image and loaded
+        _this.setTargetsToImage();
+      }
+
+    }
+
     step = 0;
-    fps = 60;
     fpsInterval = 1000 / fps;
     then = Date.now();
     params.startTime = then;
-
-
-    gl.viewport( 0, 0, canvas.width, canvas.height );
-
-    this.createRenderTargets();
-    this.compileScreenProgram();
-
     isSet = true;
   }
-
 
   // RUN
   this.run = function(pgm){
@@ -207,17 +234,34 @@ function Utomata(canvasID)
     params.mouseRadius = rad;
   }
 
-  // set Input image with url
-  this.setInput = function(url) {
-    inputImage = new Image();
-    inputImage.crossOrigin = "";
-    inputImage.src = url;
+  // set Input image with an instance or a url
+  this.setInput = function(img) {
 
-    inputImage.onload = function() {
-      _this.setup(this.width, this.height );
-      _this.setTargetsToImage();
-      step = 0;
-    };
+    if(!isSet){
+        // dummy setup
+        hasInputImage = false;
+        inputImageLoaded = false;
+        _this.setup();
+    }
+
+    if(typeof img === "string"){
+      // it's a url:
+      inputImage = new Image();
+      inputImage.crossOrigin = "";
+      inputImage.src = img;
+      hasInputImage = true;
+      inputImageLoaded = false;
+    }else if(img.nodeName.toLowerCase() === 'img'){
+      // it's an image:
+      inputImage = img;
+      hasInputImage = true;
+      inputImageLoaded = false;
+    }else{
+      // TODO: throw error
+      inputImage = undefined;
+      hasInputImage = false;
+      inputImageLoaded = false;
+    }
   }
 
 
@@ -245,7 +289,7 @@ function Utomata(canvasID)
         return "";
       }
       // return just the first one
-      return errorStack[0];
+      return errorStack;
   }
 
   this.getWidth = function(){
@@ -272,6 +316,12 @@ function Utomata(canvasID)
     return isPowerOfTwo;
   }
 
+  this.getOutput = function(){
+    var imgObj = new Image();
+    imgObj.src = canvas.toDataURL("image/png");
+
+    return imgObj;
+  }
 
 
   //////////////////////////////////////////////////////////////////
@@ -494,18 +544,21 @@ function Utomata(canvasID)
 
 
   this.setTargetsToImage = function(){
-      if(inputImage == null || inputImage == undefined){
+
+      if(inputImage === null || inputImage === undefined){
         return;
       }
-      var target = {};
-      target.framebuffer = gl.createFramebuffer();
-      target.renderbuffer = gl.createRenderbuffer();
-      target.texture = gl.createTexture();
+
+      inputTarget = {};
+      inputTarget.framebuffer = gl.createFramebuffer();
+      inputTarget.renderbuffer = gl.createRenderbuffer();
+      inputTarget.texture = gl.createTexture();
 
       gl.viewport( 0, 0, canvas.width, canvas.height );
 
       // set up framebuffer
-      gl.bindTexture( gl.TEXTURE_2D, target.texture );
+      gl.bindTexture( gl.TEXTURE_2D, inputTarget.texture );
+
       gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, inputImage );
 
       gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
@@ -515,14 +568,13 @@ function Utomata(canvasID)
       gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
       //gl.generateMipmap(gl.TEXTURE_2D);
 
-      gl.bindFramebuffer( gl.FRAMEBUFFER, target.framebuffer );
-      gl.framebufferTexture2D( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0 );
+      gl.bindFramebuffer( gl.FRAMEBUFFER, inputTarget.framebuffer );
+      gl.framebufferTexture2D( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, inputTarget.texture, 0 );
 
       // set up renderbuffer
-      gl.bindRenderbuffer( gl.RENDERBUFFER, target.renderbuffer );
-
+      gl.bindRenderbuffer( gl.RENDERBUFFER, inputTarget.renderbuffer );
       gl.renderbufferStorage( gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, params.width, params.height );
-      gl.framebufferRenderbuffer( gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, target.renderbuffer );
+      gl.framebufferRenderbuffer( gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, inputTarget.renderbuffer );
 
       // clean up
       gl.bindTexture( gl.TEXTURE_2D, null );
@@ -530,9 +582,8 @@ function Utomata(canvasID)
       gl.bindFramebuffer( gl.FRAMEBUFFER, null);
 
       // set render targets
-      backTarget = target;
+      backTarget = inputTarget;
       frontTarget = this.createBackTarget(params.width, params.height );
-      hasInputImage = true;
   }
 
   this.createShader = function( src, type ) {
@@ -830,55 +881,55 @@ function Utomata(canvasID)
     float nrm(float a, vec4 b){return normalize(a);}
     vec4 nrm(vec4 a, float b){return normalize(a);}
 
-     // SINE
-     vec4 sn(vec4 a, vec4 b){return sin(a);}
-     float sn(float a, float b){return sin(a);}
-     float sn(float a, vec4 b){return sin(a);}
-     vec4 sn(vec4 a, float b){return sin(a);}
+    // SINE
+    vec4 sn(vec4 a, vec4 b){return sin(a);}
+    float sn(float a, float b){return sin(a);}
+    float sn(float a, vec4 b){return sin(a);}
+    vec4 sn(vec4 a, float b){return sin(a);}
 
-     // COSINE
-     vec4 cs(vec4 a, vec4 b){return cos(a);}
-     float cs(float a, float b){return cos(a);}
-     float cs(float a, vec4 b){return cos(a);}
-     vec4 cs(vec4 a, float b){return sin(a);}
+    // COSINE
+    vec4 cs(vec4 a, vec4 b){return cos(a);}
+    float cs(float a, float b){return cos(a);}
+    float cs(float a, vec4 b){return cos(a);}
+    vec4 cs(vec4 a, float b){return sin(a);}
 
-     // TANGENT
-     vec4 tn(vec4 a, vec4 b){return tan(a);}
-     float tn(float a, float b){return tan(a);}
-     float tn(float a, vec4 b){return tan(a);}
-     vec4 tn(vec4 a, float b){return tan(a);}
+    // TANGENT
+    vec4 tn(vec4 a, vec4 b){return tan(a);}
+    float tn(float a, float b){return tan(a);}
+    float tn(float a, vec4 b){return tan(a);}
+    vec4 tn(vec4 a, float b){return tan(a);}
 
-     // ARC SINE
-     vec4 asn(vec4 a, vec4 b){return asin(a);}
-     float asn(float a, float b){return asin(a);}
-     float asn(float a, vec4 b){return asin(a);}
-     vec4 asn(vec4 a, float b){return asin(a);}
+    // ARC SINE
+    vec4 asn(vec4 a, vec4 b){return asin(a);}
+    float asn(float a, float b){return asin(a);}
+    float asn(float a, vec4 b){return asin(a);}
+    vec4 asn(vec4 a, float b){return asin(a);}
 
-     // ARC COSINE
-     vec4 acs(vec4 a, vec4 b){return acos(a);}
-     float acs(float a, float b){return acos(a);}
-     float acs(float a, vec4 b){return acos(a);}
-     vec4 acs(vec4 a, float b){return acos(a);}
+    // ARC COSINE
+    vec4 acs(vec4 a, vec4 b){return acos(a);}
+    float acs(float a, float b){return acos(a);}
+    float acs(float a, vec4 b){return acos(a);}
+    vec4 acs(vec4 a, float b){return acos(a);}
 
-     // ARC TANGENT
-     vec4 atn(vec4 a, vec4 b){return atan(a);}
-     float atn(float a, float b){return atan(a);}
-     float atn(float a, vec4 b){return atan(a);}
-     vec4 atn(vec4 a, float b){return atan(a);}
+    // ARC TANGENT
+    vec4 atn(vec4 a, vec4 b){return atan(a);}
+    float atn(float a, float b){return atan(a);}
+    float atn(float a, vec4 b){return atan(a);}
+    vec4 atn(vec4 a, float b){return atan(a);}
 
 
-
+    // RETURN A PSEUDO RANDOM NUMBER [0.0 - 1.0]
     float random() {
-
       vec2 st = (gl_FragCoord.xy) / resolution.xy;
       return fract(sin(dot(st.xy,vec2(12.9898,78.233)))*43758.5453123);
-      
     }
 
-
+    // GET A NEIGHBOUR RELATIVE TO SELF
     vec4 val(float _x, float _y){
       return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution) * vec2(_x, _y)));
     }
+
+
 
     //////////////////////////////////////////////////////////////////////
     void main()
@@ -908,14 +959,6 @@ function Utomata(canvasID)
         vec4 V16 = V14 + val(-3., 0.) + val(3., 0.);
         vec4 V17 = V16 + V;
 
-        // vec4 T4 = NN[0] + NN[1] + NN[2] + NN[3];
-        // vec4 T8 = NN[0] + NN[1] + NN[2] + NN[3] + NN[4] + NN[5] + NN[6] + NN[7];
-        // vec4 T12 = T8 + NN[8] + NN[9] + NN[10] + NN[11];
-        // vec4 T20 = T12 + NN[12] + NN[13] + NN[14] + NN[15] + NN[16] + NN[17] + NN[18] + NN[19];
-        // vec4 T24 = T20 + NN[20] + NN[21] + NN[22] + NN[23];
-        // my new experimental neighbourhood:
-        //vec4 VB = V4 + (V8-V4)*0.5 + (V12-V8)*0.25 + (V20-V12)*0.125;
-
         //////////////////////////////////////////
 
     `;
@@ -940,7 +983,7 @@ function Utomata(canvasID)
         }
 
         if(doConfig == 1){
-          V = ` + params.configRule + `;
+          ` + params.configRule + `
         }
 
         gl_FragColor = V;
