@@ -1,65 +1,29 @@
 
+#utomata.js
 
-<h1>utomata.js</h1>
-
-
-<h2>A webGL Javascript library for Cellular Automata</h2>
-<p>developed at the <a href="http://labofbabel.org">LABORATORY OF BABEL</a></p>
+utomata is a light weight, dependency-free javascript framework for cellular automata (CA). It uses WebGL for rendering onto the HTML canvas element, allowing browser based fast implementation of a wide range of CA algorithms at interactive speeds. The framework is designed for exploration of emergent behaviours towards art and design projects, as well as for procedural content generation.
 
 
-<p>
-utomata.js is a lightweight, dependency-free webGL-canvas library for browser based cellular automata experiments.
-</p>
+###Basic usage
 
-<h4>utomata features: </h4>
-<ul>
-	<li>hardware accelerated graphics for fast rendering. (up to 4K*4K grids at 60 fps)</li>
-	<li>a functional programming syntax, designed for interactive exploration of new algorithms</li>
-	<li>using an image or any rule for initial configuration</li>
-	<li>support for mouse interation</li>
-	<li>dependency free, lightweight JS library</li>
-</ul>
+```html
+<!-- add a link to utomata lib -->
+<script src="js/utomata.js"></script>
+<!-- create an HTML canvas element -->
+<canvas id="utoCanvas"></canvas>
+```
 
-<h4>How to use:</h4>
-<ol>
-	<li>
-		link utomata to your HTML file and create a canvas element
-	</li>
-	<li>
-		create an instace of utomata, passing the canvas id:
-		<pre>
-			var uto = new Utomata("utoCanvas");
-		</pre>
-	</li>
-	<li>
-		setup and configure utomata in one of three ways:
-		<ol>
-			<li>
-				black configuration:
-				<pre>
-				uto.setup(1024, 1024);
-			  </pre>
-			</li>
-			<li>
-				add a third parameter for the configuration rule (here, a rounded random number is assigned to each cell );
-				<pre>
-				uto.setup(1024, 1024, "vec4( rnd(random()) )" );
-			  </pre>
-			</li>
-			<li>
-				configure with a url of an image (utomata will resize automatically):
-				<pre>
-				uto.setInput("config.png");
-			  </pre>
-			</li>
-		</ol>
-	</li>
-	<li>
-		run the system with a program (ie: Conway's Game of Life):
-		<pre>uto.run("V = eql(3.0, V9) + (eql(4.0, V9) * V);");</pre>
-	</li>
-</ol>
+```javascript
+// create a system, passing the canvas ID
+var uto = new Utomata("utoCanvas");
 
-<p>
-	For more examples and an online programming environement visit <a href="http://labofbabel.org">labofbabel.org</a>
-</p>
+// basic setup with all black initial configuration
+uto.setup(1024, 1024);
+
+// run Conway's game of life
+uto.run("V = eql(3.0, V9) + (eql(4.0, V9) * V);")
+
+```
+
+The Wiki contains a programming guide and language reference.
+For more information about this project, visit [labofbabel.org](http://labofbabel.org)
