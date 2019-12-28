@@ -51,7 +51,9 @@ function Utomata(canvasID)
     mouseRadius: 1.0,
     mouseColor:{r:1.0, g:1.0, b:1.0, a:1.0},
     doConfig: 0,
-    configRule: "V= vec4(0.0);"
+    configRule: "V= vec4(0.0, 0.0, 0.0, 1.0);",
+    randSeed: 0,
+    stateDim: "vec4(V.r, V.g, V.b, 1.0)",
   }
 
   /////////////////////////////////////////////////
@@ -72,7 +74,7 @@ function Utomata(canvasID)
     params.mouseDown = 1;
   }, false );
 
-  canvas.addEventListener( 'mouseup', function ( event ) {
+  document.addEventListener( 'mouseup', function ( event ) {
     params.mouseDown = 0;
   }, false );
 
@@ -101,7 +103,6 @@ function Utomata(canvasID)
 
   /////////////////////////////////////////////////
   // INIT
-
 
   this.setup = function(wid, hei, configRule){
 
@@ -221,6 +222,22 @@ function Utomata(canvasID)
     }
   }
 
+  this.setStateDimension = function(dim){
+    if(dim == "1D"){
+        params.stateDim = "vec4(V.r)";
+    }
+    if(dim == "2D"){
+        params.stateDim = "vec4(V.r, V.r, V.r, V.g)";
+    }
+    if(dim == "3D"){
+        params.stateDim = "vec4(V.r,V.g, V.b, 1.0)";
+    }
+    if(dim == "4D"){
+        params.stateDim = "V";
+    }
+
+  }
+
   this.setFps = function(_fps){
     fps = _fps;
     fpsInterval = 1000.0 / fps;
@@ -233,6 +250,8 @@ function Utomata(canvasID)
   this.setMouseRadius = function( rad){
     params.mouseRadius = rad;
   }
+
+
 
   // set Input image with an instance or a url
   this.setInput = function(img) {
@@ -301,7 +320,16 @@ function Utomata(canvasID)
   }
 
   this.getEdgeType = function(){
-    return params.edgeType;
+
+    if(params.edgeType == gl.REPEAT){
+      return "REPEAT";
+    }else{
+      return "CLAMP";
+    }
+  }
+
+  this.getConfigRule = function(){
+    return params.configRule;
   }
 
   this.getMouseX = function(){
@@ -323,7 +351,6 @@ function Utomata(canvasID)
     return imgObj;
   }
 
-
   //////////////////////////////////////////////////////////////////
   // RENDERING
 
@@ -333,6 +360,7 @@ function Utomata(canvasID)
     if(running){
 
       now = Date.now();
+      params.randSeed = elapsed * 0.001;
       elapsed = now - then;
 
       if(elapsed > fpsInterval){
@@ -376,15 +404,17 @@ function Utomata(canvasID)
 
     // Cache uniforms
     this.cacheUniformLocation( program, 'time' );
+    this.cacheUniformLocation( program, 'randSeed' );
     this.cacheUniformLocation( program, 'mouse' );
     this.cacheUniformLocation( program, 'mouseDown' );
+    //this.cacheUniformLocation( program, 'stateDim' );
     this.cacheUniformLocation( program, 'doConfig' );
     this.cacheUniformLocation( program, 'centerPoint' );
-    this.cacheUniformLocation( program, 'mouseRadius' );
-    this.cacheUniformLocation( program, 'mouseColor' );
+    //this.cacheUniformLocation( program, 'mouseRadius' );
+    //this.cacheUniformLocation( program, 'mouseColor' );
     this.cacheUniformLocation( program, 'resolution' );
     this.cacheUniformLocation( program, 'backbuffer' );
-    this.cacheUniformLocation( program, 'slider' );
+
 
     // Load program into GPU
     gl.useProgram( program );
@@ -408,14 +438,16 @@ function Utomata(canvasID)
     // Set uniforms for custom shader
     gl.useProgram( currentProgram );
     gl.uniform1f( currentProgram.uniformsCache[ 'time' ], params.time / 1000 );
+    gl.uniform1f( currentProgram.uniformsCache[ 'randSeed' ], params.randSeed );
     gl.uniform2f( currentProgram.uniformsCache[ 'mouse' ], params.mouseX, params.mouseY );
     gl.uniform2f( currentProgram.uniformsCache[ 'resolution' ], params.width, params.height );
     gl.uniform1i( currentProgram.uniformsCache[ 'backbuffer' ], 0 );
     gl.uniform1i( currentProgram.uniformsCache[ 'mouseDown' ], params.mouseDown );
+    //gl.uniform1i( currentProgram.uniformsCache[ 'stateDim' ], params.stateDim );
     gl.uniform1i( currentProgram.uniformsCache[ 'doConfig' ], params.doConfig );
     gl.uniform1i( currentProgram.uniformsCache[ 'centerPoint' ], params.centerPoint );
-    gl.uniform1f( currentProgram.uniformsCache[ 'mouseRadius' ], params.mouseRadius );
-    gl.uniform4f( currentProgram.uniformsCache[ 'mouseColor' ], params.mouseColor.r, params.mouseColor.g, params.mouseColor.b, params.mouseColor.a );
+    //gl.uniform1f( currentProgram.uniformsCache[ 'mouseRadius' ], params.mouseRadius );
+    //gl.uniform4f( currentProgram.uniformsCache[ 'mouseColor' ], params.mouseColor.r, params.mouseColor.g, params.mouseColor.b, params.mouseColor.a );
 
     gl.activeTexture( gl.TEXTURE0 );
     gl.bindTexture( gl.TEXTURE_2D, backTarget.texture );
@@ -708,6 +740,7 @@ function Utomata(canvasID)
     precision highp float;
 
     uniform float time;
+    uniform float randSeed;
     uniform vec2 mouse;
     uniform vec2 resolution;
     uniform sampler2D backbuffer;
@@ -715,8 +748,7 @@ function Utomata(canvasID)
     uniform int doConfig;
     uniform int centerPoint;
     uniform float slider;
-    uniform float mouseRadius;
-    uniform vec4 mouseColor;
+    //uniform vec4 stateDim;
 
     // ETC functions
 
@@ -918,10 +950,16 @@ function Utomata(canvasID)
     vec4 atn(vec4 a, float b){return atan(a);}
 
 
+    vec4 vec( float a){return vec4(a);}
+    vec4 vec( float a, float b){return vec4(a, b, 0.0, 0.0);}
+    vec4 vec( float a, float b, float c){return vec4(a, b, c, 0.0);}
+    vec4 vec( float a, float b, float c, float d){return vec4(a, b, c, d);}
+
     // RETURN A PSEUDO RANDOM NUMBER [0.0 - 1.0]
     float random() {
-      vec2 st = (gl_FragCoord.xy) / resolution.xy;
-      return fract(sin(dot(st.xy,vec2(12.9898,78.233)))*43758.5453123);
+      vec2 st = (gl_FragCoord.xy / resolution.xy) * vec2(randSeed, -randSeed * 51345.01432341);
+      float res = fract(sin(dot(st.xy,vec2(12.9898,78.233))) * 43758.5453123);
+      return res;
     }
 
     // GET A NEIGHBOUR RELATIVE TO SELF
@@ -934,12 +972,13 @@ function Utomata(canvasID)
     //////////////////////////////////////////////////////////////////////
     void main()
       {
-
-        vec2 coord = (gl_FragCoord.xy) / resolution.xy;
+        float mouseRadius = 1.0;
+        vec4 mouseColor = vec4(1.0);
+        vec2 coord = gl_FragCoord.xy / resolution.xy;
         vec2 pixel = 1.0/resolution;
         float ratio = resolution.x/resolution.y;
         bool useMouse = true;
-        bool useAlpha = false;
+
 
         vec4 V = val(0.,0.);
         vec4 V2 = val(0., 1.) + val(0.,-1.);
@@ -970,7 +1009,7 @@ function Utomata(canvasID)
     let res = `
 
         //////////////////////////////////////////
-
+         ;
         if(useMouse){
           float mouseDist = distance(mouse.xy * resolution, gl_FragCoord.xy);
           if (mouseDown == 1 && mouseDist <= mouseRadius + 0.5) {
@@ -978,15 +1017,12 @@ function Utomata(canvasID)
           }
         }
 
-        if(!useAlpha){
-            V.a = 1.0;
-        }
 
         if(doConfig == 1){
           ` + params.configRule + `
         }
 
-        gl_FragColor = V;
+        gl_FragColor = ` + params.stateDim + `;
       }
     `;
 

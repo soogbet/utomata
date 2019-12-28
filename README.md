@@ -9,13 +9,11 @@ utomata is a light weight, dependency-free javascript framework for cellular aut
 ```html
 <!-- add a link to utomata lib -->
 <script src="js/utomata.js"></script>
-<!-- create an HTML canvas element -->
-<canvas id="utoCanvas"></canvas>
 ```
 
 ```javascript
 // create a system, passing the canvas ID
-var uto = new Utomata("utoCanvas");
+var uto = new Utomata();
 
 // basic setup with all black initial configuration
 uto.setup(1024, 1024);

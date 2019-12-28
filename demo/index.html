@@ -17,49 +17,33 @@
 		<script src="../utomata.js"></script>
 
 	</head>
+
+
 	<body>
 		<div class="btnContainer">
-			  <button id="resetRuleBtn" class="btn" type="button" name="button" onclick="utos[0].setup()">reset A</button>
-				<button id="resetRuleBtn" class="btn" type="button" name="button" onclick="utos[1].setup();">reset B</button>
-
-				<button id="resetRuleBtn" class="btn" type="button" name="button" onclick="document.body.appendChild(utos[1].getOutput())">save B</button>
-
+			  <button id="resetRuleBtn" class="btn" type="button" name="button" onclick="uto.setup()">reset</button>
 		</div>
 
 		<script>
 
-			var utos = [ new Utomata(), new Utomata()];
+			var uto = new Utomata();
+
+
+			// SIMPLE SETUP
+			//uto.setup(512, 512);
+
+			// SETUP WITH A CONFIGURATION VALUE
+			// (ie: a rounded random number is either 0 or 1.0)
+			uto.setup(1024, 1024, "V= vec4( stp(random(), 0.1) );" );
 
 			// SETUP from IMAGE
 			// (also resizes to the size of the image)
 			//uto.setInput("config.png");
+			//uto.setup(512, 512);
 
-			utos[0].setup(256, 256, "V= vec4( stp(random(), 0.5) );");
-
-			utos[1].setInput("config.png");
-			utos[1].setup();
-
-			utos[0].run("V = eql(3.0, V9) + (eql(4.0, V9) * V);");
-			utos[1].run("V = frc(V) + sgn(stp( vec4(0.2) , md(V4.rrgr, vec4(.88,.88,0,0)))) * (vec4(0.78, .0, 1.,0) + ((V4.rrgg - V4.bgrb) * vec4(1., 1., 0.,0)) - frc(V.rrbr)) * vec4(1., .9, 1., 0);");
-
-
-			// var uto = new Utomata();
-			//
-			// // SETUP from IMAGE
-			// // (also resizes to the size of the image)
-			// //uto.setInput("config.png");
-			// uto.setup(1024, 1024);
-			//
-			// // SIMPLE SETUP
-			// //uto.setup(512, 512);
-			//
-			// // SETUP WITH A CONFIGURATION VALUE
-			// // (ie: a rounded random number is either 0 or 1.0)
-			// //uto.setup(1024, 1024, "V= vec4( stp(random(), 0.1) );" );
-			//
-			// // run program:
-			// // (Conway's Game of Life)
-			// uto.run("V = eql(3.0, V9) + (eql(4.0, V9) * V);");
+			// run program:
+			// (Conway's Game of Life)
+			uto.run("V = eql(3.0, V9) + (eql(4.0, V9) * V);");
 
 
 		</script>
