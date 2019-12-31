@@ -51,7 +51,7 @@ function Utomata(canvasID)
     mouseRadius: 1.0,
     mouseColor:{r:1.0, g:1.0, b:1.0, a:1.0},
     doConfig: 0,
-    configRule: "V= vec4(0.0, 0.0, 0.0, 1.0);",
+    configRule: "V= vec(0.0, 0.0, 0.0, 1.0)",
     randSeed: 0,
     stateDim: "vec4(V.r, V.g, V.b, 1.0)",
   }
@@ -126,7 +126,7 @@ function Utomata(canvasID)
     // CONFIG RULE
     if(configRule === undefined){
       if(params.configRule === undefined){
-        params.configRule = "vec4(0.0)";
+        params.configRule = "vec(0.0, 0.0, 0.0, 1.0)";
       }
     }else{
       params.configRule = configRule;
@@ -951,8 +951,8 @@ function Utomata(canvasID)
 
 
     vec4 vec( float a){return vec4(a);}
-    vec4 vec( float a, float b){return vec4(a, b, 0.0, 0.0);}
-    vec4 vec( float a, float b, float c){return vec4(a, b, c, 0.0);}
+    vec4 vec( float a, float b){return vec4(a, a, a, b);}
+    vec4 vec( float a, float b, float c){return vec4(a, b, c, 1.0);}
     vec4 vec( float a, float b, float c, float d){return vec4(a, b, c, d);}
 
     // RETURN A PSEUDO RANDOM NUMBER [0.0 - 1.0]
@@ -1019,7 +1019,7 @@ function Utomata(canvasID)
 
 
         if(doConfig == 1){
-          ` + params.configRule + `
+          ` + params.configRule + `;
         }
 
         gl_FragColor = ` + params.stateDim + `;

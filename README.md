@@ -1,27 +1,32 @@
+![utomata](https://github.com/soogbet/utomata.js/raw/master/src/documentation/utomataBanner.png "utomata")
 
-# utomata.js
+## utomata.js
 
-utomata is a light weight, dependency-free javascript framework for cellular automata (CA). It uses WebGL for rendering onto the HTML canvas element, allowing browser based fast implementation of a wide range of CA algorithms at interactive speeds. The framework is designed for exploration of emergent behaviours towards art and design projects, as well as for procedural content generation.
+utomata is a lightweight, dependency free javascript framework for generalized cellular automata (CA). It uses WebGL for rendering onto the HTML canvas element, allowing browser based fast implementation of a wide range of CA algorithms at high frame rates. The framework is designed for exploration of emergent behaviours towards art and design projects, as well as for procedural content generation.
 
+This project is developed and maintained by the [Laboratory of Babel](http://labofbabel.org).
 
-### Basic usage
+* [utomata Wiki] (https://github.com/soogbet/utomata.js/wiki)
+* [Programming guide] (https://github.com/soogbet/utomata.js/wiki/Programming-guide)
+* [Language reference] (https://github.com/soogbet/utomata.js/wiki/Language-reference)
+* [About utomata] (http://labofbabel.org/utomata-meta)
+* [Online editor] (http://labofbabel.org/utomata)
+
+## Basic usage
 
 ```html
-<!-- add a link to utomata lib -->
+<!-- in HTML, add a link to utomata lib -->
 <script src="js/utomata.js"></script>
 ```
 
 ```javascript
-// create a system, passing the canvas ID
+// in a your js script, instantiate a system
 var uto = new Utomata();
 
-// basic setup with all black initial configuration
+// basic setup, passing width and height as parameters
 uto.setup(1024, 1024);
 
 // run Conway's game of life
-uto.run("V = eql(3.0, V9) + (eql(4.0, V9) * V);")
+uto.run("V = add(eql(3.0, V9), mlt((eql(4.0, V9), V)))" );
 
 ```
-
-The Wiki contains a programming guide and language reference.
-For more information about this project, visit [labofbabel.org](http://labofbabel.org)
