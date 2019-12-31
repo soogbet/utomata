@@ -1,4 +1,4 @@
-![utomata](https://https://github.com/soogbet/utomata.js/blob/master/documentation/utomataBanner.png "utomata")
+![utomata](https://github.com/soogbet/utomata.js/raw/master/documentation/utomataBanner.png "utomata")
 
 ## utomata.js
 
