@@ -54,6 +54,7 @@ function Utomata(canvasID)
     configRule: "V= vec(0.0, 0.0, 0.0, 1.0)",
     randSeed: 0,
     stateDim: "vec4(V.r, V.g, V.b, 1.0)",
+    useCastInt: true
   }
 
   /////////////////////////////////////////////////
@@ -194,6 +195,7 @@ function Utomata(canvasID)
       pgm = lastPgm;
     }else{
       if(lastPgm != pgm){
+        pgm = processPgm(pgm);
         this.compile(pgm);
         lastPgm = pgm;
       }
@@ -223,34 +225,25 @@ function Utomata(canvasID)
   }
 
   this.setStateDimension = function(dim){
-    if(dim == "1D"){
+    if(dim == 1){
         params.stateDim = "vec4(V.r)";
     }
-    if(dim == "2D"){
+    if(dim == 2){
         params.stateDim = "vec4(V.r, V.r, V.r, V.g)";
     }
-    if(dim == "3D"){
+    if(dim == 3){
         params.stateDim = "vec4(V.r,V.g, V.b, 1.0)";
     }
-    if(dim == "4D"){
+    if(dim == 4){
         params.stateDim = "V";
     }
 
   }
 
-  this.setFps = function(_fps){
+  this.setFrameRate = function(_fps){
     fps = _fps;
     fpsInterval = 1000.0 / fps;
   }
-
-  this.setMouseColor = function(hex){
-    params.mouseColor = hexToRgb(hex);
-  }
-
-  this.setMouseRadius = function( rad){
-    params.mouseRadius = rad;
-  }
-
 
 
   // set Input image with an instance or a url
@@ -281,6 +274,10 @@ function Utomata(canvasID)
       hasInputImage = false;
       inputImageLoaded = false;
     }
+  }
+
+  this.setIntCast = function(val){
+    params.useCastInt = val;
   }
 
 
@@ -701,6 +698,25 @@ function Utomata(canvasID)
     return (x == 1);
   }
 
+  function processPgm(pgm){
+    pgm = pgm.replace(/max\s*\(/g, "mx(");
+    pgm = pgm.replace(/min\s*\(/g, "mn(");
+    pgm = pgm.replace(/log\s*\(/g, "lg(");
+    pgm = pgm.replace(/pow\s*\(/g, "pw(");
+    pgm = pgm.replace(/dot\s*\(/g, "dt(");
+    pgm = pgm.replace(/sin\s*\(/g, "sn(");
+    pgm = pgm.replace(/cos\s*\(/g, "cs(");
+    pgm = pgm.replace(/tan\s*\(/g, "tn(");
+
+    if(params.useCastInt){
+      var integerRegex = new RegExp( /(\b(?<!\.)\d+(?!\.)\b)/g );
+      pgm = pgm.replace(integerRegex, '$1.0');
+    }
+
+    console.log(pgm);
+    return pgm;
+  }
+
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////
   // SHADERS
@@ -972,13 +988,14 @@ function Utomata(canvasID)
     //////////////////////////////////////////////////////////////////////
     void main()
       {
-        float mouseRadius = 1.0;
-        vec4 mouseColor = vec4(1.0);
+
         vec2 coord = gl_FragCoord.xy / resolution.xy;
         vec2 pixel = 1.0/resolution;
         float ratio = resolution.x/resolution.y;
-        bool useMouse = true;
 
+        bool useMouse = true;
+        float mouseRadius = 1.0;
+        vec4 mouseColor = vec4(1.0);
 
         vec4 V = val(0.,0.);
         vec4 V2 = val(0., 1.) + val(0.,-1.);
@@ -1016,7 +1033,6 @@ function Utomata(canvasID)
             V = mouseColor;
           }
         }
-
 
         if(doConfig == 1){
           ` + params.configRule + `;

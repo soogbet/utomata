@@ -27,6 +27,6 @@ var uto = new Utomata();
 uto.setup(1024, 1024);
 
 // run Conway's game of life
-uto.run("V = add(eql(3.0, V9), mlt((eql(4.0, V9), V)))" );
+uto.run("V = add( eql(3, V9), mlt( eql(4, V9), V))" );
 
 ```

@@ -7,45 +7,26 @@
 		<style media="screen">
       html,body,div,form,fieldset,legend,label{margin:0;padding:0;}table{border-collapse:collapse;border-spacing:0;}th,td{text-align:left;vertical-align:top;}h1,h2,h3,h4,h5,h6,th,td,caption{font-weight:normal;}img{border:0;}
 			html,body{background:#333;}
-
 			img, canvas{display:inline-block;image-rendering: pixelated; margin:4px;}
-
 			.btnContainer{position: fixed; top: 32px; left:32px;}
-
     </style>
-
 		<script src="../utomata.js"></script>
-
 	</head>
-
-
 	<body>
+
 		<div class="btnContainer">
 			  <button id="resetRuleBtn" class="btn" type="button" name="button" onclick="uto.setup()">reset</button>
 		</div>
 
+		<script id="pgm" type="text">
+			V = add( eql(3, V9), mlt( eql(4, V9), V ) )
+		</script>
+
 		<script>
-
 			var uto = new Utomata();
-
-
-			// SIMPLE SETUP
-			//uto.setup(512, 512);
-
-			// SETUP WITH A CONFIGURATION VALUE
-			// (ie: a rounded random number is either 0 or 1.0)
-			uto.setup(1024, 1024, "V= vec4( stp(random(), 0.1) );" );
-
-			// SETUP from IMAGE
-			// (also resizes to the size of the image)
-			//uto.setInput("config.png");
-			//uto.setup(512, 512);
-
-			// run program:
-			// (Conway's Game of Life)
-			uto.run("V = eql(3.0, V9) + (eql(4.0, V9) * V);");
-
-
+			uto.setup(512, 512);
+			uto.setStateDimension(3);
+			uto.run( document.getElementById("pgm").innerText );
 		</script>
 
 	</body>
