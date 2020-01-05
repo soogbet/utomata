@@ -9,7 +9,7 @@ This project is developed and maintained by the [Laboratory of Babel](http://lab
 * [utomata Wiki](https://github.com/soogbet/utomata.js/wiki)
 * [Programming guide](https://github.com/soogbet/utomata.js/wiki/Programming-guide)
 * [Language reference](https://github.com/soogbet/utomata.js/wiki/Language-reference)
-* [About utomata](http://labofbabel.org/utomata-meta)
+* [Example programs](http://labofbabel.org/lab)
 * [Online editor](http://labofbabel.org/utomata)
 
 ## Basic usage
