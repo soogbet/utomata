@@ -16,7 +16,7 @@ This project is developed and maintained by the [Laboratory of Babel](http://lab
 
 ```html
 <!-- in HTML, add a link to utomata lib -->
-<script src="js/utomata.js"></script>
+<script src="http://labofbabel.org/utomata/utomata.js"></script>
 ```
 
 ```javascript
