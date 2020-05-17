@@ -17,13 +17,13 @@ utomata is a lightweight, dependency free javascript framework for cellular auto
 ```
 
 ```javascript
-// in a your js script, instantiate a system
+// in a your script, instantiate a system
 var uto = new Utomata();
 
 // basic setup, passing width and height as parameters
 uto.setup(1024, 1024);
 
 // run Conway's game of life
-uto.run("V = add( eql(3.0, V9), mlt( eql(4.0, V9), V))" );
+uto.run( "V = add( eql(3.0, V9), mlt( eql(4.0, V9), V))" );
 
 ```
