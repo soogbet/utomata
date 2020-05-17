@@ -2,14 +2,11 @@
 
 ## utomata.js
 
-utomata is a lightweight, dependency free javascript framework for generalized cellular automata (CA). It uses WebGL for rendering onto the HTML canvas element, allowing browser based fast implementation of a wide range of CA algorithms at high frame rates. The framework is designed for exploration of emergent behaviours towards art and design projects, as well as for procedural content generation.
+utomata is a lightweight, dependency free javascript framework for cellular automata (CA). It uses WebGL for rendering onto the HTML canvas element, allowing browser based fast rendering of a wide range of CA algorithms. utomata uses a custom functinal syntax, based on GLSL for describing all transition functnios. The framework is designed for interactive explorations of novel algorithms in computational art and design, procedural content generation and simulation.
 
-This project is developed and maintained by the [Laboratory of Babel](http://labofbabel.org).
-
-* [utomata Wiki](https://github.com/soogbet/utomata.js/wiki)
+* [Wiki](https://github.com/soogbet/utomata.js/wiki)
 * [Programming guide](https://github.com/soogbet/utomata.js/wiki/Programming-guide)
 * [Language reference](https://github.com/soogbet/utomata.js/wiki/Language-reference)
-* [Example programs](http://labofbabel.org/lab)
 * [Online editor](http://labofbabel.org/utomata)
 
 ## Basic usage
@@ -27,6 +24,6 @@ var uto = new Utomata();
 uto.setup(1024, 1024);
 
 // run Conway's game of life
-uto.run("V = add( eql(3, V9), mlt( eql(4, V9), V))" );
+uto.run("V = add( eql(3.0, V9), mlt( eql(4.0, V9), V))" );
 
 ```
