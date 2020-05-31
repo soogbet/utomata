@@ -1,4 +1,3 @@
-![utomata](https://github.com/soogbet/utomata.js/raw/master/documentation/utomataBanner.png "utomata")
 
 ## utomata.js
 
@@ -14,18 +13,18 @@ This project is still in production. feel free to contact me for enquiries.
 ## Basic usage
 
 ```html
-<!-- in HTML, add a link to utomata lib -->
-<script src="http://labofbabel.org/utomata/utomata.js"></script>
-```
-
-```javascript
-// in a your script, instantiate a system
-var uto = new Utomata();
-
-// basic setup, passing width and height as parameters
-uto.setup(1024, 1024);
-
-// run Conway's game of life
-uto.run( "V = add( eql(3.0, V9), mlt( eql(4.0, V9), V))" );
-
+<!DOCTYPE html>
+<html>
+   <head>
+      <script src="utomata.js"></script>
+      <script type="text/javascript">
+         // create a structure
+         var uto = new Utomata(1024, 1024);
+         // run coways game of life
+         uto.run("V = add(eql(3.0, V9), mlt((eql(4.0, V9), V)))" );
+      </script>
+   <head>
+   <body>
+   </body>
+</html>
 ```
