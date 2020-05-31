@@ -8,7 +8,7 @@ This project is still in production. feel free to contact me for enquiries.
 * [Wiki](https://github.com/soogbet/utomata.js/wiki)
 * [Programming guide](https://github.com/soogbet/utomata.js/wiki/Programming-guide)
 * [Language reference](https://github.com/soogbet/utomata.js/wiki/Language-reference)
-* [Online editor](http://labofbabel.org/utomata)
+* [Online editor](https://soogbet.github.io/utomata.js/)
 
 ## Basic usage
 
