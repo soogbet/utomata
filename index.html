@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<title>utomata editor</title>
+		<meta charset="utf-8">
+		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=Roboto+Mono&display=swap" rel="stylesheet">
+		<style media="screen">
+		*,*::before,*::after {box-sizing: border-box;margin: 0;padding: 0;}
+		body{background:#222;}
+		img, canvas{display:block; image-rendering: pixelated;}
+		#utoPgm{background: rgba(0, 0, 0, 0.7); color:#FFF; position:fixed; top:0; left:0; width: 480px; height: 480px; font-family: 'IBM Plex Mono', monospace;padding:32px 0 0 16px;overflow: scroll;text-overflow: ellipsis;white-space: nowrap;display:block;}
+		#header{ background: rgba(0, 0, 0, 0.7);width: 478px; display: flex; justify-content: space-between; border-bottom: 1px solid #F33; padding: 4px; color: #FFF; position: fixed; top: 1px ; left: 1px; font-family: 'Roboto Mono', monospace; font-size: 9px;}
+		.headerItem {color: #F33;  cursor: pointer;}
+		.headerItem input{ border: 0; color:inherit; background:none;font-family: inherit; font-size: inherit}
+		</style>
+		<script src="utomata.js"></script>
+	</head>
+	<body>
+
+		<textarea id="utoPgm">
+vec2 p0 = vec2(0.72, 0.129);
+vec2 p = vec2(0.2, 0.5) + vec2(0.19, 0.88) * vec2(0.8, 0.5);
+
+V= mlt(
+      add(
+         frc(V),
+         mlt(
+            sgn(
+               stp( vec(0.1,0.1, 1.0),
+               md(V4.rrrr, vec(p.x, p.y,0.0)))
+            ),
+            sub(
+               add(
+                  vec(p0.x, p0.y, 1.),
+                  mlt(
+                     (V4.rrgg - V4.ggrg),
+                     vec( 10.0, 0.1, 1.0)
+                  )
+               ),
+               frc(V.rrbr)
+            )
+         )
+      ),
+      vec(1.0, 0.988, 1.0)
+   );
+		</textarea>
+
+
+		<div id="header">
+			<div class="headerItem">
+				utomata(<input size="4" type="text" id="inputWid" value="1024">,<input size="4" type="text" id="inputHei" value="1024">)
+			</div>
+
+			<div  id="inputConfig" class="headerItem">
+				config()
+			</div>
+
+			<div class="headerItem">
+				fps(<input size="2" type="text"  id="inputFps" name="" value="60">)
+			</div>
+
+			<div class="headerItem">
+				zoom(<input size="2" type="text"  id="inputZoom" name="" value="1">)
+			</div>
+
+			<div  id="inputSave" class="headerItem">
+				save()
+			</div>
+
+		</div>
+
+		<script>
+
+		var uto;
+		uto = new utomata( 1024, 1024);
+
+		reset();
+
+		function reset(){
+			var wid = document.getElementById("inputWid").value;
+			var hei = document.getElementById("inputHei").value;
+			var zoom = document.getElementById("inputZoom").value;
+			var fps = document.getElementById("inputFps").value;
+
+			uto.size( wid, hei);
+			uto.run( document.getElementById("utoPgm").value );
+			// uto.zoom(zoom);
+			// uto.fps(fps);
+			// uto.config();
+		}
+
+			// uto.stop();
+			// uto.go();
+			// uto.config("V = vec4(1.0, 0, 0, 1.0)");
+
+			// uto.getErrors();
+
+			// TODO:
+			// uto.input( tex );
+			// uto.var("key", value);
+
+			// uto.getVar("key");
+			// uto.getInfo();
+
+
+			document.getElementById("inputConfig").addEventListener('click', function(){
+				uto.config();
+			});
+
+			document.getElementById("inputZoom").addEventListener('change', function(){
+				uto.zoom(this.value);
+			});
+
+			document.getElementById("inputFps").addEventListener('change', function(){
+				uto.fps(this.value);
+			});
+
+			document.getElementById("inputWid").addEventListener('change',reset);
+			document.getElementById("inputHei").addEventListener('change',reset);
+
+			document.getElementById("utoPgm").onkeyup = function(){
+				var callcount = 0;
+				    var action = function(){
+				        uto.run( document.getElementById("utoPgm").value );
+				    }
+				    var delayAction = function(action, time){
+				        var expectcallcount = callcount;
+				        var delay = function(){
+				            if(callcount == expectcallcount){
+				                action();
+				            }
+				        }
+				        setTimeout(delay, time);
+				    }
+				    return function(eventtrigger){
+				        ++callcount;
+				        delayAction(action, 500);
+				    }
+			}();
+
+
+		</script>
+
+	</body>
+</html>

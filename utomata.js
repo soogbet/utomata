@@ -3,389 +3,242 @@
 //////////////////////////////////
 /*
   A javascript library for Cellular Automata
-  liorbengai 2019
+  liorbengai 2020
   labofbabel.org
+
+  VANILLA VERSION
 */
 
 /*
 
-BUG: the initial width and height cannot be overriden upwards
+TODO:
+
+- add uniforms externally
+- implement zoom to multiply the canvas size in css
+- read from input image
+
+
+BUGS:
+- eql doesn't work
+- random doesn't work
+- REPEAT doesn't work
 
 */
 
-function Utomata(canvasID)
+function utomata(_wid, _hei)
 {
-
-  /////////////////////////////////////////////////
-  // GLOBAL PARAMS
   var _this = this;
 
-  var isSet = false;
-  var running = false;
-  var step = 0, fps = 60, avgFps = 0, fpsInterval, now, then, elapsed, actualFPS;
-
-  var lastPgm;
-  var currentProgram;
-  var errorStack = [];
-
-  var gl, buffer, vertexPosition;
-  var frontTarget, backTarget, inputTarget, screenProgram, startFrag, fragVars;
-
-  var hasInputImage = false, isPowerOfTwoCanvas = false;
-  var inputImage;
-  var inputImageLoaded = false;
-
-  var animationFrameIndex;
-  var updateEvent = new Event("update");
-
+  // all structure parameters
   var params = {
-    edgeType: 0,
-    width: 512,
-    height: 512,
-    startTime: Date.now(),
-    time: 0,
-    mouseX: 0,
-    mouseY: 0,
+    width: _wid,
+    height: _hei,
+    transition: "V = vec4(0.0, 1.0, 0, 1.0);",
+    config: "vec4(1.0, 0, 0, 1.0)",
+    doConfig: 1,
+    edge: "REPEAT",
+    fps: 60,
+    zoom: 1,
+    step: 0,
     mouseDown: 0,
     mouseOver: 0,
-    mouseRadius: 1.0,
-    mouseColor:{r:1.0, g:1.0, b:1.0, a:1.0},
-    doConfig: 0,
-    configRule: "V= vec(0.0, 0.0, 0.0, 1.0)",
-    randSeed: 0,
-    stateDim: "vec4(V.r, V.g, V.b, 1.0)",
-    useCastInt: true
+    mouseX: 0,
+    mouseY: 0,
+    startTime: Date.now(),
+    randSeed: 12341324.012341234,
   }
 
-  /////////////////////////////////////////////////
-  // CANVAS
+  // an array of key value pairs to use as uniforms for the shader
+  var uniforms = [];
 
-  var canvas;
+  // GL vars
+  var canvas, gl, buffer, currentProgram, vertexPosition;
+  var frontTarget, backTarget, screenProgram;
 
-  if(canvasID === undefined){
-    // create if none provided
-    canvas = document.createElement("canvas");
-    document.body.appendChild(canvas);
-  }else{
-    // assign to var using ID
-    canvas = document.getElementById( canvasID );
+  var errors = [];
+
+  var running = true;
+  var fpsInterval = 1000/params.fps;
+
+  var then = Date.now();
+  var startTime = then;
+  var now, elapsed;
+
+  var initImage;
+  var usingInitImage = false;
+
+
+  if ( !window.requestAnimationFrame ) {
+    window.requestAnimationFrame = ( function() {
+      return window.webkitRequestAnimationFrame ||
+        window.mozRequestAnimationFrame ||
+        window.oRequestAnimationFrame ||
+        window.msRequestAnimationFrame ||
+        function ( callback, element ) {
+        window.setTimeout( callback, 1000 / 60 );
+      };
+    } )();
   }
 
-  canvas.addEventListener( 'mousedown', function ( event ) {
-    params.mouseDown = 1;
-  }, false );
 
-  document.addEventListener( 'mouseup', function ( event ) {
-    params.mouseDown = 0;
-  }, false );
+  init();
+  animate();
 
-  canvas.addEventListener( 'mouseover', function ( event ) {
-    params.mouseOver = 1;
-  }, false );
-
-  canvas.addEventListener( 'mouseout', function ( event ) {
-    params.mouseOver = 0;
-  }, false );
-
-  canvas.addEventListener( 'mousemove', function ( event ) {
-
-    var rect = canvas.getBoundingClientRect();
-
-    var ratioW = parseInt(canvas.style.width, 10) / canvas.width;
-    var ratioH = parseInt(canvas.style.height, 10) / canvas.height;
-
-    var clientX = (event.clientX - rect.left) / ratioW;
-    var clientY = (event.clientY - rect.top) / ratioH;
-
-    params.mouseX = clientX / canvas.width;
-    params.mouseY = 1- ( (clientY) / (canvas.height) )  ;
-
-  }, false );
-
-  /////////////////////////////////////////////////
-  // INIT
-
-  this.setup = function(wid, hei, configRule){
-
-    // SIZE
-    if(wid === undefined || hei === undefined){
-      // USE EXISTING PARAMS FOR SETUP
-    }else{
-      params.width = wid;
-      params.height = hei;
-
-      // make sure there is an initial css value
-      canvas.style.width = params.width + 'px';
-      canvas.style.height = params.height + 'px';
-    }
-
-    canvas.width = params.width;
-    canvas.height = params.height;
-
-    isPowerOfTwoCanvas = isPowerOfTwo(canvas.width) && isPowerOfTwo(canvas.height);
-
-    // CONFIG RULE
-    if(configRule === undefined){
-      if(params.configRule === undefined){
-        params.configRule = "vec(0.0, 0.0, 0.0, 1.0)";
-      }
-    }else{
-      params.configRule = configRule;
-    }
+  // GO / STOP
 
 
-    // INIT WEBGL
-    try {
-      gl = canvas.getContext( 'experimental-webgl', {preserveDrawingBuffer: true} );
-    } catch( error ) { }
+  this.run = function(_transition){
 
-    if ( !gl ) {
-      alert("Sorry, Utomata need a WebGL enabled browser. Please use Chrome/Safari/Firefox");
-      throw "cannot create webgl context";
-    }
-
-    // Create vertex buffer (2 triangles)
-    buffer = gl.createBuffer();
-    gl.bindBuffer( gl.ARRAY_BUFFER, buffer );
-    gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( [ - 1.0, - 1.0, 1.0, - 1.0, - 1.0, 1.0, 1.0, - 1.0, 1.0, 1.0, - 1.0, 1.0 ] ), gl.STATIC_DRAW );
-
-    if (params.edgeType == 0) {
-      params.edgeType = gl.CLAMP_TO_EDGE;
-    }
-
-    gl.viewport( 0, 0, canvas.width, canvas.height );
-
-
-    if(!hasInputImage){
-      // no input image
-      this.createRenderTargets();
-      this.compileScreenProgram();
-      params.doConfig = 1;
-    }else{
-
-      if(!inputImageLoaded){
-        // has but not loaded
-        inputImage.onload = function() {
-          inputImageLoaded = true;
-          params.width = inputImage.width;
-          params.height = inputImage.height;
-          _this.setup();
-        };
-
-      }else{
-        // has image and loaded
-        _this.setTargetsToImage();
-      }
-
-    }
-
-    step = 0;
-    fpsInterval = 1000 / fps;
-    then = Date.now();
-    params.startTime = then;
-    isSet = true;
-  }
-
-  // RUN
-  this.run = function(pgm){
-
-    if(!isSet)this.setup();
-
-    if(pgm === undefined){
-      pgm = lastPgm;
-    }else{
-      if(lastPgm != pgm){
-        pgm = processPgm(pgm);
-        this.compile(pgm);
-        lastPgm = pgm;
-      }
-    }
-
+    params.transition = _transition;
+    params.startTime =  Date.now();
     running = true;
-    this.animate();
+
+    compile();
   }
 
-  // pause
-  this.stop = function(){
+  this.stop = function(_transition){
     running = false;
-    this.dispatchEvent(updateEvent);
   }
 
 
-
-  //////////////////////////////////////////////////////////////////
   // SETTERS
 
-  this.setEdgeType = function(type){
-    if(type == "REPEAT" && isPowerOfTwoCanvas){
-      params.edgeType = gl.REPEAT;
+  this.config = function(){
+    // if(_conf !== 'undefined'){
+    //   params.config = _conf;
+    // }
+    params.doConfig = 1;
+  }
+
+  this.fps = function(_fps){
+    params.fps = _fps;
+    fpsInterval = 1000/params.fps;
+  }
+
+
+  // TODO: USE IN PROGRAM
+  this.edge = function(_edge){
+    if( _edge == "REPEAT" ){
+      params.edge = "REPEAT";
     }else{
-      params.edgeType = gl.CLAMP_TO_EDGE;
+      params.edge = "CLAMP_TO_EDGE";
     }
-  }
-
-  this.setStateDimension = function(dim){
-    if(dim == 1){
-        params.stateDim = "vec4(V.r)";
-    }
-    if(dim == 2){
-        params.stateDim = "vec4(V.r, V.r, V.r, V.g)";
-    }
-    if(dim == 3){
-        params.stateDim = "vec4(V.r,V.g, V.b, 1.0)";
-    }
-    if(dim == 4){
-        params.stateDim = "V";
-    }
-
-  }
-
-  this.setFrameRate = function(_fps){
-    fps = _fps;
-    fpsInterval = 1000.0 / fps;
+    updateCanvasSize();
   }
 
 
-  // set Input image with an instance or a url
-  this.setInput = function(img) {
+  this.size = function(w, h){
 
-    if(!isSet){
-        // dummy setup
-        hasInputImage = false;
-        inputImageLoaded = false;
-        _this.setup();
-    }
+    params.width =parseInt(w);
+    params.height =parseInt(h);
 
-    if(typeof img === "string"){
-      // it's a url:
-      inputImage = new Image();
-      inputImage.crossOrigin = "";
-      inputImage.src = img;
-      hasInputImage = true;
-      inputImageLoaded = false;
-    }else if(img.nodeName.toLowerCase() === 'img'){
-      // it's an image:
-      inputImage = img;
-      hasInputImage = true;
-      inputImageLoaded = false;
-    }else{
-      // TODO: throw error
-      inputImage = undefined;
-      hasInputImage = false;
-      inputImageLoaded = false;
-    }
-  }
-
-  this.setIntCast = function(val){
-    params.useCastInt = val;
+    updateCanvasSize();
+    zoomCanvas();
   }
 
 
-  //////////////////////////////////////////////////////////////////
+
+
   // GETTERS
-
-  this.getInfo = function(){
-    var res = "";
-    res += " ( " + params.width + " by " + params.height + " ) | ";
-    if(running){
-      res += "Running at " + avgFps + " fps | "
-    }else{
-      res += "Paused | "
-    }
-    res += "step: "+step+" | "
-    if(running){
-      res += "mouse: ("+ decimal(params.mouseX, 4) +", " + decimal(params.mouseY, 4) +")";
-    }
-
-    return res;
-  }
-
-  this.getErrors = function(){
-      if(errorStack.length == 0){
-        return "";
-      }
-      // return just the first one
-      return errorStack;
-  }
-
-  this.getWidth = function(){
-    return params.width;
-  }
-
-  this.getHeight = function(){
-    return params.height;
-  }
-
-  this.getEdgeType = function(){
-
-    if(params.edgeType == gl.REPEAT){
-      return "REPEAT";
-    }else{
-      return "CLAMP";
-    }
-  }
-
-  this.getConfigRule = function(){
-    return params.configRule;
-  }
-
-  this.getMouseX = function(){
-    return params.mouseX;
-  }
-
-  this.getMouseY = function(){
-    return params.mouseY;
-  }
-
-  this.getIsPowTwo = function(){
-    return isPowerOfTwo;
-  }
-
-  this.getOutput = function(){
-    var imgObj = new Image();
-    imgObj.src = canvas.toDataURL("image/png");
-
-    return imgObj;
-  }
-
-  //////////////////////////////////////////////////////////////////
-  // RENDERING
-
-
-  this.animate = function(){
-    animationFrameIndex = requestAnimationFrame( _this.animate );
-    if(running){
-
-      now = Date.now();
-      params.randSeed = elapsed * 0.001;
-      elapsed = now - then;
-
-      if(elapsed > fpsInterval){
-        then = now - (elapsed % fpsInterval);
-        actualFPS = decimal(1/(elapsed/1000),0);
-        avgFps += decimal((actualFPS - avgFps) / 10 ,0);
-
-        dispatchEvent(updateEvent);
-        _this.render();
-      }
-    }
+  this.errors = function(){
+    return errors;
   }
 
 
-  this.compile = function(pgm) {
+  this.zoom = function(newZ){
+    params.zoom = Math.round(newZ);
+    zoomCanvas();
+  }
+
+
+
+
+  function init() {
+
+    // create #mainCanvas
+  	var container = document.createElement( 'div' );
+    container.id = "mainCanvasContainer"
+  	document.body.appendChild( container );
+
+  	canvas = document.createElement( 'canvas' );
+    canvas.id = "mainCanvas";
+  	container.appendChild( canvas );
+
+  	// Initialise WebGL
+  	try {
+      gl = canvas.getContext( 'experimental-webgl', {preserveDrawingBuffer: true} );
+  	} catch( error ) { }
+
+  	if ( !gl ) {
+      alert("WebGL not supported on this browser. Please use Chrome/Safari/Firefox");
+      throw "cannot create webgl context";
+  	}
+
+  	// Create vertex buffer (2 triangles)
+  	buffer = gl.createBuffer();
+  	gl.bindBuffer( gl.ARRAY_BUFFER, buffer );
+  	gl.bufferData( gl.ARRAY_BUFFER, new Float32Array( [ - 1.0, - 1.0, 1.0, - 1.0, - 1.0, 1.0, 1.0, - 1.0, 1.0, 1.0, - 1.0, 1.0 ] ), gl.STATIC_DRAW );
+
+    updateCanvasSize();
+
+    canvas.addEventListener( 'mousedown', function ( event ) {
+      params.mouseDown = 1;
+    }, false );
+
+    canvas.addEventListener( 'mouseup', function ( event ) {
+      params.mouseDown = 0;
+    }, false );
+
+    canvas.addEventListener( 'mouseover', function ( event ) {
+      params.mouseOver = 1;
+      //$("#mouseCoords").show();
+    }, false );
+
+    canvas.addEventListener( 'mouseout', function ( event ) {
+      params.mouseOver = 0;
+      //$("#mouseCoords").hide();
+    }, false );
+
+    canvas.addEventListener( 'mousemove', function ( event ) {
+
+      var rect = canvas.getBoundingClientRect();
+      var clientX = (event.clientX - rect.left) / params.zoom;
+      var clientY = (event.clientY - rect.top) / params.zoom;
+
+      params.mouseX = clientX / params.width;
+      params.mouseY = 1 - ( (clientY) / (params.height) )  ;
+
+    }, false );
+
+
+    compile();
+  	compileScreenProgram();
+
+  }
+
+  function decimal(n, d){
+      var a = Math.pow(10,d);
+      return Math.round(n * a) / a;
+  }
+
+
+  function compile() {
+
+    console.log("compiling: " + params.transition);
 
     var program = gl.createProgram();
-    var vertex = this.getUtomataVertShader();
-    var fragment =  this.getUtomataFragStart() + pgm + this.getUtomataFragEnd();
 
-    var vs = this.createShader( vertex, gl.VERTEX_SHADER );
-    var fs = this.createShader( fragment, gl.FRAGMENT_SHADER );
+    fragment = getUtoFragA() + params.transition +  getUtoFragB();
 
-    if ( vs == null || fs == null ) return null;
+    var vs = createShader( 'attribute vec3 position; void main() { gl_Position = vec4( position, 1.0 ); }', gl.VERTEX_SHADER );
+    var fs = createShader( fragment, gl.FRAGMENT_SHADER );
+
+    if ( vs == null || fs == null ){
+        return null;
+    }
 
     gl.attachShader( program, vs );
     gl.attachShader( program, fs );
-
     gl.deleteShader( vs );
     gl.deleteShader( fs );
 
@@ -395,26 +248,19 @@ function Utomata(canvasID)
       return;
     }
 
-    errorStack = [];
-
     currentProgram = program;
 
     // Cache uniforms
-    this.cacheUniformLocation( program, 'time' );
-    this.cacheUniformLocation( program, 'randSeed' );
-    this.cacheUniformLocation( program, 'mouse' );
-    this.cacheUniformLocation( program, 'mouseDown' );
-    //this.cacheUniformLocation( program, 'stateDim' );
-    this.cacheUniformLocation( program, 'doConfig' );
-    this.cacheUniformLocation( program, 'centerPoint' );
-    //this.cacheUniformLocation( program, 'mouseRadius' );
-    //this.cacheUniformLocation( program, 'mouseColor' );
-    this.cacheUniformLocation( program, 'resolution' );
-    this.cacheUniformLocation( program, 'backbuffer' );
-
+    cacheUniformLocation( program, 'time' );
+    cacheUniformLocation( program, 'mouse' );
+    cacheUniformLocation( program, 'mouseDown' );
+    cacheUniformLocation( program, 'resolution' );
+    cacheUniformLocation( program, 'backbuffer' );
+    cacheUniformLocation( program, 'doConfig' );
+    cacheUniformLocation( program, 'randSeed' );
 
     // Load program into GPU
-    gl.useProgram( program );
+    gl.useProgram( currentProgram );
 
     // Set up buffers
     gl.bindBuffer( gl.ARRAY_BUFFER, buffer );
@@ -423,86 +269,14 @@ function Utomata(canvasID)
 
   }
 
-  this.render = function() {
-
-    if ( !currentProgram ) return;
-
-    if(step > 0){
-        params.doConfig = 0;
-    }
-
-    params.time = Date.now() - params.startTime;
-    // Set uniforms for custom shader
-    gl.useProgram( currentProgram );
-    gl.uniform1f( currentProgram.uniformsCache[ 'time' ], params.time / 1000 );
-    gl.uniform1f( currentProgram.uniformsCache[ 'randSeed' ], params.randSeed );
-    gl.uniform2f( currentProgram.uniformsCache[ 'mouse' ], params.mouseX, params.mouseY );
-    gl.uniform2f( currentProgram.uniformsCache[ 'resolution' ], params.width, params.height );
-    gl.uniform1i( currentProgram.uniformsCache[ 'backbuffer' ], 0 );
-    gl.uniform1i( currentProgram.uniformsCache[ 'mouseDown' ], params.mouseDown );
-    //gl.uniform1i( currentProgram.uniformsCache[ 'stateDim' ], params.stateDim );
-    gl.uniform1i( currentProgram.uniformsCache[ 'doConfig' ], params.doConfig );
-    gl.uniform1i( currentProgram.uniformsCache[ 'centerPoint' ], params.centerPoint );
-    //gl.uniform1f( currentProgram.uniformsCache[ 'mouseRadius' ], params.mouseRadius );
-    //gl.uniform4f( currentProgram.uniformsCache[ 'mouseColor' ], params.mouseColor.r, params.mouseColor.g, params.mouseColor.b, params.mouseColor.a );
-
-    gl.activeTexture( gl.TEXTURE0 );
-    gl.bindTexture( gl.TEXTURE_2D, backTarget.texture );
-
-    // Render custom shader to front buffer
-    gl.bindFramebuffer( gl.FRAMEBUFFER, frontTarget.framebuffer );
-    gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
-    gl.drawArrays( gl.TRIANGLES, 0, 6 );
-
-    // Set uniforms for screen shader
-    gl.useProgram( screenProgram );
-    gl.uniform2f( screenProgram.uniformsCache[ 'resolution' ], params.width, params.height );
-    gl.uniform1i( screenProgram.uniformsCache[ 'texture' ], 1 );
-    gl.activeTexture( gl.TEXTURE1 );
-    gl.bindTexture( gl.TEXTURE_2D, frontTarget.texture );
-
-    // Render front buffer to screen
-    gl.bindFramebuffer( gl.FRAMEBUFFER, null );
-    gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
-    gl.drawArrays( gl.TRIANGLES, 0, 6 );
-
-    // Swap buffers
-    var tmp = frontTarget;
-    frontTarget = backTarget;
-    backTarget = tmp;
-    step++;
-  }
-
-
-  this.compileScreenProgram = function() {
+  function compileScreenProgram() {
 
     var program = gl.createProgram();
-    var fragment = `
-    precision highp int;
-    precision highp float;
+    var fragment = getFragmentShader();
+    var vertex = getVertexShader();
 
-    uniform vec2 resolution;
-    uniform sampler2D texture;
-    void main() {
-        vec2 uv = gl_FragCoord.xy / resolution.xy;
-        gl_FragColor = texture2D( texture, uv );
-    }
-    `;
-    var vertex = `
-    precision highp int;
-    precision highp float;
-
-    attribute vec3 position;
-
-    void main()
-    {
-        gl_Position = vec4( position.x, position.y,0.0, 0.0 );
-
-    }
-    `;
-
-    var vs = this.createShader( vertex, gl.VERTEX_SHADER );
-    var fs = this.createShader( fragment, gl.FRAGMENT_SHADER );
+    var vs = createShader( vertex, gl.VERTEX_SHADER );
+    var fs = createShader( fragment, gl.FRAGMENT_SHADER );
 
     gl.attachShader( program, vs );
     gl.attachShader( program, fs );
@@ -515,17 +289,16 @@ function Utomata(canvasID)
     if ( !gl.getProgramParameter( program, gl.LINK_STATUS ) ) {
       console.error( 'VALIDATE_STATUS: ' + gl.getProgramParameter( program, gl.VALIDATE_STATUS ), 'ERROR: ' + gl.getError() );
       return;
-    }
+  	}
 
-    screenProgram = program;
+  	screenProgram = program;
 
-    this.cacheUniformLocation( program, 'resolution' );
-    this.cacheUniformLocation( program, 'texture' );
+  	cacheUniformLocation( program, 'resolution' );
+  	cacheUniformLocation( program, 'texture' );
 
   }
 
-
-  this.cacheUniformLocation = function( program, label ) {
+  function cacheUniformLocation( program, label ) {
 
     if ( program.uniformsCache === undefined ) {
       program.uniformsCache = {};
@@ -534,12 +307,12 @@ function Utomata(canvasID)
   }
 
 
-  this.createRenderTargets = function() {
-    frontTarget = this.createBackTarget(params.width, params.height );
-    backTarget = this.createBackTarget(params.width, params.height );
+  function createRenderTargets() {
+    frontTarget = createBackTarget(params.width, params.height );
+    backTarget = createBackTarget(params.width, params.height );
   }
 
-  this.createBackTarget = function(width, height ) {
+  function createBackTarget(width, height ) {
 
     var target = {};
     target.framebuffer = gl.createFramebuffer();
@@ -549,8 +322,15 @@ function Utomata(canvasID)
     gl.bindTexture( gl.TEXTURE_2D, target.texture );
     gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, width, height, 0, gl.RGBA, gl.UNSIGNED_BYTE, null );
 
-    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, params.edgeType  );
-    gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, params.edgeType  );
+    // TODO: this is not working 31.5.2019
+    if(params.edge == "REPEAT" && isPowTwoSize()){
+      gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT );
+      gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT );
+
+    }else {
+      gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
+      gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+    }
 
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
     gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
@@ -572,38 +352,67 @@ function Utomata(canvasID)
   }
 
 
-  this.setTargetsToImage = function(){
+  //LOAD AN IMAGE
+  function loadImage(url) {
 
-      if(inputImage === null || inputImage === undefined){
-        return;
-      }
+    initImage = new Image();
+    initImage.crossOrigin = "";
+    initImage.src = url;
+    initImage.onload = function() {
 
-      inputTarget = {};
-      inputTarget.framebuffer = gl.createFramebuffer();
-      inputTarget.renderbuffer = gl.createRenderbuffer();
-      inputTarget.texture = gl.createTexture();
+      var width = this.width;
+      var height = this.height;
+
+      params.width = width;
+      params.height = height;
+
+      canvas.width = params.width;
+      canvas.height = params.height;
+
+      params.width = canvas.width;
+      params.height = canvas.height;
+
+
+      zoomCanvas();
+
+      setTargetsToImage();
+      params.step = 0;
+    };
+  }
+
+  function setTargetsToImage(){
+
+      var target = {};
+      target.framebuffer = gl.createFramebuffer();
+      target.renderbuffer = gl.createRenderbuffer();
+      target.texture = gl.createTexture();
 
       gl.viewport( 0, 0, canvas.width, canvas.height );
 
       // set up framebuffer
-      gl.bindTexture( gl.TEXTURE_2D, inputTarget.texture );
+      gl.bindTexture( gl.TEXTURE_2D, target.texture );
+      gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, initImage );
 
-      gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, inputImage );
-
-      gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
-      gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+      if(params.edge == "REPEAT" && isPowTwoSize()){
+        gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT );
+        gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT );
+      }else {
+        gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
+        gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
+      }
 
       gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST );
       gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST );
       //gl.generateMipmap(gl.TEXTURE_2D);
 
-      gl.bindFramebuffer( gl.FRAMEBUFFER, inputTarget.framebuffer );
-      gl.framebufferTexture2D( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, inputTarget.texture, 0 );
+      gl.bindFramebuffer( gl.FRAMEBUFFER, target.framebuffer );
+      gl.framebufferTexture2D( gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, target.texture, 0 );
 
       // set up renderbuffer
-      gl.bindRenderbuffer( gl.RENDERBUFFER, inputTarget.renderbuffer );
+      gl.bindRenderbuffer( gl.RENDERBUFFER, target.renderbuffer );
+
       gl.renderbufferStorage( gl.RENDERBUFFER, gl.DEPTH_COMPONENT16, params.width, params.height );
-      gl.framebufferRenderbuffer( gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, inputTarget.renderbuffer );
+      gl.framebufferRenderbuffer( gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, target.renderbuffer );
 
       // clean up
       gl.bindTexture( gl.TEXTURE_2D, null );
@@ -611,16 +420,39 @@ function Utomata(canvasID)
       gl.bindFramebuffer( gl.FRAMEBUFFER, null);
 
       // set render targets
-      backTarget = inputTarget;
-      frontTarget = this.createBackTarget(params.width, params.height );
+      backTarget = target;
+      frontTarget = createBackTarget(params.width, params.height );
+      usingInitImage = true;
   }
 
-  this.createShader = function( src, type ) {
+  function isPowTwoSize(){
+
+    var x = params.width;
+    while (((x % 2) == 0) && x > 1){
+      x /= 2;
+    } /* While x is even and > 1 */
+
+    var y = params.height;
+    while (((y % 2) == 0) && x > 1){
+      y /= 2;
+    } /* While x is even and > 1 */
+    return ( (x == 1) && (y == 1) );
+
+  }
+
+
+
+  function createShader( src, type ) {
 
     var shader = gl.createShader( type );
-
     var line, lineNum, lineError, index = 0, indexEnd;
-    var linesInETCfrag = this.getUtomataFragStart().split('\n').length - 1 ;
+
+    var linesInStartFrag = getUtoFragA().split('\n').length - 1 ;
+
+
+    while (errors.length > 0) {
+      line = errors.pop();
+    }
 
     gl.shaderSource( shader, src );
     gl.compileShader( shader );
@@ -634,7 +466,7 @@ function Utomata(canvasID)
         error = error.substring(0, error.length - 1);
       }
 
-      errorStack = [];
+      errors = [];
 
       while (index >= 0) {
         index = error.indexOf("ERROR: 0:", index);
@@ -642,105 +474,169 @@ function Utomata(canvasID)
         index += 9;
         indexEnd = error.indexOf(':', index);
         if (indexEnd > index) {
-          lineNum = parseInt(error.substring(index, indexEnd)) - linesInETCfrag;
+          lineNum = parseInt(error.substring(index, indexEnd)) - linesInStartFrag;
           if ((!isNaN(lineNum)) && (lineNum > 0)) {
             index = indexEnd + 1;
             indexEnd = error.indexOf("ERROR: 0:", index);
             lineError = htmlEncode((indexEnd > index) ? error.substring(index, indexEnd) : error.substring(index));
-            errorStack.push("ERROR in Line " +lineNum+" >> "+ lineError);
+            // line = code.setMarker(lineNum - 1, '<abbr title="' + lineError + '">' + lineNum + '</abbr>', "errorMarker");
+            //code.setLineClass(line, "errorLine");
+            errors.push(line);
+
+            errors.push("ERROR in Line " +lineNum+" >> "+ lineError);
           }
         }
       }
 
+      console.error(errors);
 
-      // Has errors
       return null;
 
     }else{
       // no errors
-      // nothing to do
+      // $("#console").html(" ");
+      // $("#console").hide();
     }
 
     return shader;
 
   }
 
-  // HTML ENCODER HELPER THINGY
+
+  // todo: does that not just mean make a new instance?
+
+  function updateCanvasSize(){
+
+    canvas.width = params.width;
+    canvas.height = params.height;
+
+    zoomCanvas();
+
+    params.width = canvas.width;
+    params.height = canvas.height;
+    gl.viewport( 0, 0, canvas.width, canvas.height );
+    createRenderTargets();
+    params.step = 0;
+  }
+
+  function zoomCanvas(){
+    canvas.style.width = params.width * params.zoom + 'px';
+    canvas.style.height = params.height* params.zoom + 'px';
+  }
+
+
+  function animate() {
+    requestAnimationFrame( animate );
+
+    now = Date.now();
+    elapsed = now - then;
+
+    if(running == true && (elapsed > fpsInterval) ){
+      then = now - (elapsed % fpsInterval);
+      render();
+      params.step += 1;
+    }
+
+  }
+
+  function render() {
+
+    if ( !currentProgram ) return;
+
+    params.time = Date.now() - params.startTime;
+
+    // Set uniforms for custom shader
+
+    gl.useProgram( currentProgram );
+
+    gl.uniform1f( currentProgram.uniformsCache[ 'time' ], params.time / 1000 );
+    gl.uniform2f( currentProgram.uniformsCache[ 'mouse' ], params.mouseX, params.mouseY );
+    gl.uniform2f( currentProgram.uniformsCache[ 'resolution' ], params.width, params.height );
+    gl.uniform1i( currentProgram.uniformsCache[ 'backbuffer' ], 0 );
+    gl.uniform1i( currentProgram.uniformsCache[ 'doConfig' ], params.doConfig );
+    gl.uniform1i( currentProgram.uniformsCache[ 'mouseDown' ], params.mouseDown );
+    gl.uniform1f( currentProgram.uniformsCache[ 'randSeed' ], params.randSeed );
+
+    // TODO: instead of a slider use the uniforms array in a loop here
+    //gl.uniform1f( currentProgram.uniformsCache[ 'slider' ], AdaptiveSlider.val );
+
+    gl.activeTexture( gl.TEXTURE0 );
+    gl.bindTexture( gl.TEXTURE_2D, backTarget.texture );
+
+    // Render custom shader to front buffer
+
+    gl.bindFramebuffer( gl.FRAMEBUFFER, frontTarget.framebuffer );
+
+    gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+    gl.drawArrays( gl.TRIANGLES, 0, 6 );
+
+    // Set uniforms for screen shader
+
+    gl.useProgram( screenProgram );
+
+    gl.uniform2f( screenProgram.uniformsCache[ 'resolution' ], params.width, params.height );
+    gl.uniform1i( screenProgram.uniformsCache[ 'texture' ], 1 );
+
+    gl.activeTexture( gl.TEXTURE1 );
+    gl.bindTexture( gl.TEXTURE_2D, frontTarget.texture );
+
+    // Render front buffer to screen
+
+    gl.bindFramebuffer( gl.FRAMEBUFFER, null );
+
+    gl.clear( gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT );
+    gl.drawArrays( gl.TRIANGLES, 0, 6 );
+
+    // Swap buffers
+
+    var tmp = frontTarget;
+    frontTarget = backTarget;
+    backTarget = tmp;
+
+    // config can only happen once
+    params.doConfig = 0;
+  }
+
   function htmlEncode(str){
+
     return String(str)
       .replace(/&/g, '&amp;')
       .replace(/"/g, '&quot;')
       .replace(/'/g, '&#39;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;');
+
   }
 
-  // GET FLOAT DECIMAL
-  function decimal(n, d){
-      var a = Math.pow(10,d);
-      return Math.round(n * a) / a;
-  }
+  function saveImage(returnType) {
 
-  function hexToRgb(hex) {
-    var result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-    return result ? {
-      r: parseInt(result[1], 16)/255,
-      g: parseInt(result[2], 16)/255,
-      b: parseInt(result[3], 16)/255,
-      a: 1.0
-    } : null;
-  }
 
-  function isPowerOfTwo(x){
-    while (((x % 2) == 0) && x > 1){
-      x /= 2;
-    } /* While x is even and > 1 */
-    return (x == 1);
-  }
+    var dataURL = canvas.toDataURL("image/png");
 
-  function processPgm(pgm){
-    pgm = pgm.replace(/max\s*\(/g, "mx(");
-    pgm = pgm.replace(/min\s*\(/g, "mn(");
-    pgm = pgm.replace(/log\s*\(/g, "lg(");
-    pgm = pgm.replace(/pow\s*\(/g, "pw(");
-    pgm = pgm.replace(/dot\s*\(/g, "dt(");
-    pgm = pgm.replace(/sin\s*\(/g, "sn(");
-    pgm = pgm.replace(/cos\s*\(/g, "cs(");
-    pgm = pgm.replace(/tan\s*\(/g, "tn(");
-
-    if(params.useCastInt){
-      var integerRegex = new RegExp( /(\b(?<!\.)\d+(?!\.)\b)/g );
-      pgm = pgm.replace(integerRegex, '$1.0');
+    // The returnType argument specifies how to get the
+    // the image.  'obj' will set the source to an image element.
+    // 'window' will open a new window and display the image.
+    // 'download' will prompt the user to save the image.
+    switch(returnType) {
+      case 'obj':
+        var imgObj = new Image();
+        imgObj.src = dataURL;
+        document.getElementById('graphics').appendChild(imgObj);
+        break;
+      case 'window':
+        window.open(dataURL, "Canvas Image");
+        break;
+      case 'download':
+        dataURL = dataURL.replace("image/png", "image/octet-stream");
+        document.location.href = dataURL;
+        break;
     }
-
-    console.log(pgm);
-    return pgm;
   }
 
 
-  ///////////////////////////////////////////////////////////////////////////////////////////////////
-  // SHADERS
+  function getUtoFragA(){
 
-  this.getUtomataVertShader = function(){
-    var res = `precision highp int;
-      precision highp float;
-
-      attribute vec3 position;
-
-      void main()
-      {
-          gl_Position = vec4( position.x, position.y,0.0, 0.0 );
-
-      }`;
-
-    return res;
-  }
-
-
-  // fragment shaders for start and end of transition functions
-  this.getUtomataFragStart = function(){
-
-    let res = `
+      var res = `
     //////////////////////////////////////////
     //
     // ETCETERA
@@ -752,19 +648,18 @@ function Utomata(canvasID)
     #define G 1.61803398874989484820
     #define SQ2 1.41421356237309504880
 
-    precision highp int;
+    #ifdef GL_ES
     precision highp float;
+    #endif
 
     uniform float time;
-    uniform float randSeed;
     uniform vec2 mouse;
     uniform vec2 resolution;
     uniform sampler2D backbuffer;
-    uniform int mouseDown;
+
     uniform int doConfig;
-    uniform int centerPoint;
-    uniform float slider;
-    //uniform vec4 stateDim;
+    uniform int mouseDown;
+    uniform float randSeed;
 
     // ETC functions
 
@@ -838,10 +733,10 @@ function Utomata(canvasID)
     float stp(float a){return 1.0;}
 
     // EQUALITY
-    vec4 eql(vec4 a, vec4 b){return step(a,b) * step(b,a);}
-    float eql(float a, float b){return step(a,b) * step(b,a);}
-    vec4 eql(vec4 a, float b){return step(a,vec4(b)) * step(vec4(b),a);}
-    vec4 eql(float a, vec4 b){return step(vec4(a),b) * step(b,vec4(a));}
+    vec4 eql(vec4 a, vec4 b){return stp(a,b) * stp(b,a);}
+    float eql(float a, float b){return stp(a,b) * stp(b,a);}
+    vec4 eql(vec4 a, float b){return stp(a,vec4(b)) * stp(vec4(b),a);}
+    vec4 eql(float a, vec4 b){return stp(vec4(a),b) * stp(b,vec4(a));}
     vec4 eql(vec4 a){return vec4(1.0);}
     float eql(float a){return 1.0;}
 
@@ -965,7 +860,6 @@ function Utomata(canvasID)
     float atn(float a, vec4 b){return atan(a);}
     vec4 atn(vec4 a, float b){return atan(a);}
 
-
     vec4 vec( float a){return vec4(a);}
     vec4 vec( float a, float b){return vec4(a, a, a, b);}
     vec4 vec( float a, float b, float c){return vec4(a, b, c, 1.0);}
@@ -973,29 +867,34 @@ function Utomata(canvasID)
 
     // RETURN A PSEUDO RANDOM NUMBER [0.0 - 1.0]
     float random() {
-      vec2 st = (gl_FragCoord.xy / resolution.xy) * vec2(randSeed, -randSeed * 51345.01432341);
+      vec2 uv = gl_FragCoord.xy / resolution.xy;
+      vec2 st = uv * vec2(randSeed, -randSeed * 51345.01432341);
       float res = fract(sin(dot(st.xy,vec2(12.9898,78.233))) * 43758.5453123);
       return res;
     }
 
     // GET A NEIGHBOUR RELATIVE TO SELF
     vec4 val(float _x, float _y){
-      return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution) * vec2(_x, _y)));
+      return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(_x, _y)));
     }
 
 
+    `
 
-    //////////////////////////////////////////////////////////////////////
+    res += `
     void main()
-      {
-
-        vec2 coord = gl_FragCoord.xy / resolution.xy;
+    {
+        // VARS
+        vec2 uv = gl_FragCoord.xy / resolution.xy;
         vec2 pixel = 1.0/resolution;
-        float ratio = resolution.x/resolution.y;
-
         bool useMouse = true;
-        float mouseRadius = 1.0;
+        bool useAlpha = false;
+        float aspect = resolution.x/resolution.y;
+
+        // global variables
         vec4 mouseColor = vec4(1.0);
+        float mouseRadius = 1.0;
+        vec4 config = vec(0.0, 0.0, 0.0, 1.0);
 
         vec4 V = val(0.,0.);
         vec4 V2 = val(0., 1.) + val(0.,-1.);
@@ -1014,37 +913,65 @@ function Utomata(canvasID)
         vec4 V15 = V14 + V;
         vec4 V16 = V14 + val(-3., 0.) + val(3., 0.);
         vec4 V17 = V16 + V;
+    `
 
-        //////////////////////////////////////////
+    return res;
 
-    `;
+    }
+
+  function getUtoFragB(){
+
+    var res = `
+    if(useMouse == true){
+      float mousePos = length(mouse.xy *resolution - gl_FragCoord.xy);
+      float t = clamp(mousePos - mouseRadius, 0.0, 1.0);
+      vec4 layer2 = vec4(mouseColor.rgb, 1.0 - t);
+      V = mix(V, layer2, layer2.a * float(mouseDown));
+    }
+
+    if(useAlpha == false){
+      V.a = 1.0;
+    }
+
+    if(doConfig == 1){
+      V = config;
+    }
+
+    V = clamp(V, 0.0, 1.0);
+
+    gl_FragColor = vec4(V.rgb, 1.0);
+    }
+    `
     return res;
   }
 
-  this.getUtomataFragEnd = function(){
 
-    let res = `
+  function getVertexShader(){
+    var res = `
+    attribute vec3 position;
+    void main() {
+        gl_Position = vec4( position, 1.0 );
+    }
+    `
+    return res;
+  }
 
-        //////////////////////////////////////////
-         ;
-        if(useMouse){
-          float mouseDist = distance(mouse.xy * resolution, gl_FragCoord.xy);
-          if (mouseDown == 1 && mouseDist <= mouseRadius + 0.5) {
-            V = mouseColor;
-          }
-        }
-
-        if(doConfig == 1){
-          ` + params.configRule + `;
-        }
-
-        gl_FragColor = ` + params.stateDim + `;
-      }
-    `;
+  function getFragmentShader(){
+    var res = `
+    #ifdef GL_ES
+    precision highp float;
+    #endif
+    uniform vec2 resolution;
+    uniform sampler2D texture;
+    void main() {
+        vec2 uv = gl_FragCoord.xy / resolution.xy;
+        gl_FragColor = texture2D( texture, uv );
+    }
+    `
 
     return res;
   }
 
 
   return this;
-}
+}// end utomata()
