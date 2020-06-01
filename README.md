@@ -17,7 +17,7 @@
    <head>
       <script src="utomata.js"></script>
       <script type="text/javascript">
-         // create a structure
+         // create a system with one million cells
          var uto = new utomata(1024, 1024);
          // run coways game of life
          uto.run("V = add(eql(3.0, V9), mlt((eql(4.0, V9), V)))" );
