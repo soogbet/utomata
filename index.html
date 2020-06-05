@@ -3,21 +3,79 @@
 	<head>
 		<title>utomata editor</title>
 		<meta charset="utf-8">
-		<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono&family=Roboto+Mono&display=swap" rel="stylesheet">
+		<link href="https://fonts.googleapis.com/css2?family=Space+Mono&family=VT323&display=swap" rel="stylesheet">
 		<style media="screen">
 		*,*::before,*::after {box-sizing: border-box;margin: 0;padding: 0;}
-		body{background:#222;}
-		img, canvas{display:block; image-rendering: pixelated;}
-		#utoPgm{background: rgba(0, 0, 0, 0.7); color:#FFF; position:fixed; top:0; left:0; width: 480px; height: 480px; font-family: 'IBM Plex Mono', monospace;padding:32px 0 0 16px;overflow: scroll;text-overflow: ellipsis;white-space: nowrap;display:block;}
-		#header{ background: rgba(0, 0, 0, 0.7);width: 478px; display: flex; justify-content: space-between; border-bottom: 1px solid #F33; padding: 4px; color: #FFF; position: fixed; top: 1px ; left: 1px; font-family: 'Roboto Mono', monospace; font-size: 9px;}
-		.headerItem {color: #F33;  cursor: pointer;}
-		.headerItem input{ border: 0; color:inherit; background:none;font-family: inherit; font-size: inherit}
+		body{background:#222;font-family: 'VT323', monospace; font-size: 14px; color: #F33; }
+		#mainCanvas{display:block; image-rendering: pixelated;image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; cursor: crosshair;}
+		#panel{
+			position: fixed;
+			top: 0;
+			left: 0;
+		  resize: both;
+		  border: 1px solid rgba(127,127,127, 0.3);
+		  border-top: none;
+		  border-left: none;
+			overflow-y: auto;
+			overflow-x: auto;
+		  min-width: 520px;
+		  min-height: 32px;
+			padding-top: 40px;
+			background: rgba(0, 0, 0, 0.8); color:#FFF; position:fixed; top:0; left:0;  height: 480px;
+			z-index: 1;
+		}
+		#infoPanel{
+			position: fixed;
+			bottom: 4px;
+			left: 8px;
+			font-size: 11px;
+		}
+		.ace_editor{
+		  background: none;
+			margin-left: 16px;
+		}
+		#header{z-index: 100; position: fixed; top: 11px; left:19px; width: 480px; display: flex; justify-content: space-between; }
+		.headerItem {color: #F33; cursor: pointer;}
+		.headerItem input{ text-align: center; border: 0; color:inherit; background:none;font-family: inherit; font-size: inherit}
+		.noselect {-webkit-user-select: none;user-select: none;}
 		</style>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.11/ace.min.js" type="text/javascript">	</script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.11/mode-glsl.min.js" type="text/javascript"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.11/theme-terminal.min.js" type="text/javascript"></script>
 		<script src="utomata.js"></script>
 	</head>
-	<body>
+	<body ondrop="dropHandler(event);" ondragover="dragOverHandler(event);">
 
-		<textarea id="utoPgm">
+		<div id="panel">
+
+		<div id="header">
+			<div class="headerItem noselect">
+				utomata(<input size="4" type="text" id="inputWid" value="1024">,<input size="4" type="text" id="inputHei" value="1024">)
+			</div>
+
+			<div  id="inputConfig" class="headerItem  noselect">
+				config()
+			</div>
+
+			<div  id="inputRun" class="headerItem  noselect">
+				stop()
+			</div>
+
+			<div class="headerItem  noselect">
+				fps(<input size="2" type="text"  id="inputFps" name="" value="60">)
+			</div>
+
+			<div class="headerItem  noselect">
+				zoom(<input size="2" type="text"  id="inputZoom" name="" value="1">)
+			</div>
+
+			<div  id="inputSave" class="headerItem  noselect">
+				save()
+			</div>
+		</div>
+
+
+		<textarea spellcheck="false" id="utoPgm">
 vec2 p0 = vec2(0.72, 0.129);
 vec2 p = vec2(0.2, 0.5) + vec2(0.19, 0.88) * vec2(0.8, 0.5);
 
@@ -44,49 +102,102 @@ V= mlt(
       vec(1.0, 0.988, 1.0)
    );
 		</textarea>
+</div>
 
+<div id="infoPanel" class="noselect">
 
-		<div id="header">
-			<div class="headerItem">
-				utomata(<input size="4" type="text" id="inputWid" value="1024">,<input size="4" type="text" id="inputHei" value="1024">)
-			</div>
-
-			<div  id="inputConfig" class="headerItem">
-				config()
-			</div>
-
-			<div class="headerItem">
-				fps(<input size="2" type="text"  id="inputFps" name="" value="60">)
-			</div>
-
-			<div class="headerItem">
-				zoom(<input size="2" type="text"  id="inputZoom" name="" value="1">)
-			</div>
-
-			<div  id="inputSave" class="headerItem">
-				save()
-			</div>
-
-		</div>
+</div>
 
 		<script>
 
+		var isRunning = true;
+
+		var editorTimeOut;
+		var editor = ace.edit('utoPgm');
+		editor.setTheme("ace/theme/terminal");
+		editor.session.setMode("ace/mode/glsl");
+
+		editor.setOption("showGutter", false);
+		editor.setTheme("ace/theme/terminal");
+	  editor.session.setMode("ace/mode/glsl");
+	  editor.renderer.setShowPrintMargin(false);
+	  editor.setOption("showInvisibles", false);
+	  editor.setOption("selectionStyle", "text");
+	  editor.setOption("highlightActiveLine", false);
+	  editor.setOption("highlightSelectedWord", true);
+	  editor.setOption("cursorStyle", "wide");
+	  editor.setOption("useSoftTabs", true);
+	  editor.setOption("tabSize", 3);
+	  editor.setOption("fontSize", 14);
+	  editor.setAutoScrollEditorIntoView(true);
+	  editor.setOption("maxLines", "Infinity");
+
+		//var rules = editor.session.$mode.$highlightRules.getRules();
+		//console.log(rules);
+		// TODO: add utomata keywords
+
+		// for (var stateName in rules) {
+		// 		if (Object.prototype.hasOwnProperty.call(rules, stateName)) {
+		// 				rules[stateName].unshift({
+		// 						token: 'my_token',
+		// 						regex: 'two'
+		// 				});
+		// 		}
+		// }
+
+		// force recreation of tokenizer
+		// editor.session.$mode.$tokenizer = null;
+		// editor.session.bgTokenizer.setTokenizer(editor.session.$mode.getTokenizer());
+		// force re-highlight whole document
+		// editor.session.bgTokenizer.start(0);
+
+
+		var useLocalStorage = true;
 		var uto;
+		var pgm = "";
+		var wid, hei, zoom, fps;
+
+		wid = document.getElementById("inputWid").value;
+		hei = document.getElementById("inputHei").value;
+		zoom = document.getElementById("inputZoom").value;
+		fps = document.getElementById("inputFps").value;
+
 		uto = new utomata( 1024, 1024);
+
+		if (typeof(Storage) !== "undefined" && useLocalStorage) {
+      if(localStorage.getItem("utomataProgram") !== null){
+        // load last program
+        pgm = localStorage.getItem("utomataProgram");
+      }
+			if(localStorage.getItem("utomataWidth") !== null){
+        // load last program
+        wid = localStorage.getItem("utomataWidth");
+      }
+			if(localStorage.getItem("utomataHeight") !== null){
+        // load last program
+        hei = localStorage.getItem("utomataHeight");
+      }
+			if(localStorage.getItem("utomataZoom") !== null){
+        // load last program
+        zoom = localStorage.getItem("utomataZoom");
+      }
+			if(localStorage.getItem("utomataFps") !== null){
+        // load last program
+        fps = localStorage.getItem("utomataFps");
+      }
+		}
+
+		editor.setValue(pgm);
 
 		reset();
 
 		function reset(){
-			var wid = document.getElementById("inputWid").value;
-			var hei = document.getElementById("inputHei").value;
-			var zoom = document.getElementById("inputZoom").value;
-			var fps = document.getElementById("inputFps").value;
 
 			uto.size( wid, hei);
-			uto.run( document.getElementById("utoPgm").value );
-			// uto.zoom(zoom);
-			// uto.fps(fps);
-			// uto.config();
+			uto.run( editor.getValue() );
+			uto.zoom(zoom);
+			uto.fps(fps);
+			uto.config();
 		}
 
 			// uto.stop();
@@ -102,41 +213,224 @@ V= mlt(
 			// uto.getVar("key");
 			// uto.getInfo();
 
+			document.getElementById("mainCanvas").addEventListener("mousemove", function(e){
+				var info = "( " +uto.getMouseX() + " , " + uto.getMouseY() + " )";
+				document.getElementById("infoPanel").innerHTML = info;
+			})
 
 			document.getElementById("inputConfig").addEventListener('click', function(){
 				uto.config();
 			});
 
+			document.getElementById("inputRun").addEventListener('click', function(){
+				if(isRunning){
+					uto.stop();
+					this.innerHTML = "run()";
+					isRunning = false;
+				}else{
+					uto.run();
+					this.innerHTML = "stop()";
+					isRunning = true;
+				}
+			});
+
 			document.getElementById("inputZoom").addEventListener('change', function(){
-				uto.zoom(this.value);
+				zoom = this.value;
+				uto.zoom(zoom);
 			});
-
 			document.getElementById("inputFps").addEventListener('change', function(){
-				uto.fps(this.value);
+				fps = this.value
+				uto.fps(fps);
+			});
+			document.getElementById("inputWid").addEventListener('change',function(){
+				wid = this.value;
+				reset();
+			});
+			document.getElementById("inputHei").addEventListener('change',function(){
+				hei = this.value;
+				reset();
 			});
 
-			document.getElementById("inputWid").addEventListener('change',reset);
-			document.getElementById("inputHei").addEventListener('change',reset);
 
-			document.getElementById("utoPgm").onkeyup = function(){
-				var callcount = 0;
-				    var action = function(){
-				        uto.run( document.getElementById("utoPgm").value );
-				    }
-				    var delayAction = function(action, time){
-				        var expectcallcount = callcount;
-				        var delay = function(){
-				            if(callcount == expectcallcount){
-				                action();
-				            }
-				        }
-				        setTimeout(delay, time);
-				    }
-				    return function(eventtrigger){
-				        ++callcount;
-				        delayAction(action, 500);
-				    }
-			}();
+
+
+			document.getElementById("panel").addEventListener('mouseup', function(e){
+			  editor.resize();
+			});
+
+
+			document.getElementById("inputSave").addEventListener('click', function(){
+
+				var data = "<!DOCTYPE html><html lang='en' dir='ltr'><head><meta charset='utf-8'>";
+				data += '<style media="screen">*,*::before,*::after {box-sizing: border-box;margin: 0;padding: 0;}body{background:#222;}img, canvas{display:block; image-rendering: pixelated;image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;}</style>';
+				data += "<" + "script src='utomata.js'></"+"script></head><body><pre style='display:none;' id='utoPgm'>";
+
+				data +=  editor.getValue();
+
+				data += "</pre></body><"+"script type='text/javascript'>";
+				data += 'var uto;uto = new utomata(' + wid + ', ' + hei + ');';
+				data += 'uto.zoom(' + zoom + ');';
+				data += 'uto.fps(' + fps + ');';
+				data += 'uto.run(document.getElementById("utoPgm").innerHTML);';
+				data += "</" + "script></html>";
+
+				var d = new Date();
+				var ds = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDay() + '-' + d.getHours() + '-' + d.getMinutes() + '-' + d.getSeconds();
+				var filename = "utoPgm-" + ds + ".html"
+				var file = new Blob([data], {type: "text/plain"});
+				if (window.navigator.msSaveOrOpenBlob) // IE10+
+						window.navigator.msSaveOrOpenBlob(file, filename);
+				else { // Others
+						var a = document.createElement("a"),
+						url = URL.createObjectURL(file);
+						a.href = url;
+						a.download = filename;
+						document.body.appendChild(a);
+						a.click();
+						setTimeout(function() {
+								document.body.removeChild(a);
+								window.URL.revokeObjectURL(url);
+						}, 0);
+				}
+			});
+
+
+			editor.getSession().on("change", function(){
+				if(isRunning){
+					clearTimeout(editorTimeOut);
+					editorTimeOut = setTimeout(function(){
+							uto.run( editor.getValue() );
+					}, 300);
+				}
+			});
+
+
+
+			// SAVE CAMVAS AS PNG IN NEW TAB
+			function saveImage(fileName, returnType) {
+			  // if(!isRunning){
+			  //   return;
+			  // }
+			  var dataURL = document.getElementById("utomataCanvas").toDataURL("image/png");
+
+			  // The returnType argument specifies how to get the
+			  // the image.  'obj' will set the source to an image element.
+			  // 'window' will open a new window and display the image.
+			  // 'download' will prompt the user to save the image.
+
+			  switch(returnType) {
+			    case 'obj':
+			      var imgObj = new Image();
+			      imgObj.src = dataURL;
+			      document.getElementById('imageContainer').appendChild(imgObj);
+			      break;
+			    case 'window':
+			      window.open(dataURL, "Canvas Image");
+			      break;
+			    case 'download':
+
+			      var dlLink = document.createElement('a');
+			      dlLink.download = fileName;
+			      dlLink.href = dataURL;//dataURL.replace("image/png", "image/octet-stream");
+			      dlLink.dataset.downloadurl = ["image/png", dlLink.download, dlLink.href].join(':');
+
+			      document.body.appendChild(dlLink);
+			      dlLink.click();
+			      document.body.removeChild(dlLink);
+
+			      break;
+			  }
+			}
+
+
+			function dropHandler(ev) {
+			  console.log('File(s) dropped');
+
+			  // Prevent default behavior (Prevent file from being opened)
+			  ev.preventDefault();
+
+			  if (ev.dataTransfer.items) {
+			    // Use DataTransferItemList interface to access the file(s)
+			    for (var i = 0; i < ev.dataTransfer.items.length; i++) {
+			      // If dropped items aren't files, reject them
+			      if (ev.dataTransfer.items[i].kind === 'file') {
+			        var file = ev.dataTransfer.items[0].getAsFile();
+
+			        var extension = file.name
+			        var reader = new FileReader();
+
+			        let ext = file.name.split('.').pop().toLowerCase();
+			        if(ext == 'js'){
+			          reader.readAsText(file,"UTF-8");
+			        }else if(ext == 'html'){
+			          reader.onload = function(event) {
+
+			            let _script = getTagContent(event.target.result, 'utoPgm');
+
+			            if(_script == ""){
+			              alert('Error loading file');
+			            }else{
+			                editor.setValue(_script, -1);
+			            }
+			          }
+								reader.readAsText(file,"UTF-8");
+
+			        }else if(ext == 'png' || ext == 'jpg'){
+			          // var img = document.createElement("img");
+			          // img.classList.add("hidden");
+			          // img.file = file;
+								//
+			          // reader.onload = (
+			          //   function (aImg) { return function (e) {
+			          //    aImg.src = e.target.result;
+			          //    utomata.setInput(aImg);
+			          //    utomata.setup();
+			          //   };
+			          // })(img);
+			          // reader.readAsDataURL(file);
+			        }
+			      }
+			    }
+			  } else {
+			    // Use DataTransfer interface to access the file(s)
+			    // for (var i = 0; i < ev.dataTransfer.files.length; i++) {
+			    //   var file = ev.dataTransfer.files[0].getAsFile();
+			    //   // same as above?
+			    // }
+			  }
+			}
+
+			function getTagContent (html, id){
+
+			    var temporalDivElement = document.createElement("div");
+
+			    temporalDivElement.innerHTML = html;
+			    let res = temporalDivElement.querySelectorAll("#" + id)[0];
+			    if(typeof res === "undefined"){
+			      return "";
+			    }
+			    return res.innerHTML;
+			}
+
+			function dragOverHandler(ev) {
+			  // Prevent default behavior (Prevent file from being opened)
+			  ev.preventDefault();
+			}
+
+
+			window.onbeforeunload = function(){
+			  // Store current state
+			  if (typeof(Storage) !== "undefined") {
+			    localStorage.setItem("utomataProgram", editor.getValue());
+					localStorage.setItem("utomataWidth", wid);
+					localStorage.setItem("utomataHeight", hei);
+					localStorage.setItem("utomataZoom", zoom);
+					localStorage.setItem("utomataFps", fps);
+			  }
+
+			  // keeping the program so no real need for this:
+			  //return 'Are you sure you want to leave?';
+			};
 
 
 		</script>

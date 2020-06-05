@@ -33,8 +33,8 @@ function utomata(_wid, _hei)
   var params = {
     width: _wid,
     height: _hei,
-    transition: "V = vec4(0.0, 1.0, 0, 1.0);",
-    config: "vec4(1.0, 0, 0, 1.0)",
+    transition: "V = vec4(0.0, 0.0, 0.0, 1.0);",
+    config: "vec4(0.0, 0.0, 0.0, 1.0)",
     doConfig: 1,
     edge: "REPEAT",
     fps: 60,
@@ -46,6 +46,7 @@ function utomata(_wid, _hei)
     mouseY: 0,
     startTime: Date.now(),
     randSeed: 12341324.012341234,
+    useCastInt: true
   }
 
   // an array of key value pairs to use as uniforms for the shader
@@ -89,7 +90,7 @@ function utomata(_wid, _hei)
 
   this.run = function(_transition){
 
-    params.transition = _transition;
+    params.transition = processPgm(_transition);
     params.startTime =  Date.now();
     running = true;
 
@@ -137,8 +138,6 @@ function utomata(_wid, _hei)
   }
 
 
-
-
   // GETTERS
   this.errors = function(){
     return errors;
@@ -150,7 +149,12 @@ function utomata(_wid, _hei)
     zoomCanvas();
   }
 
-
+  this.getMouseX = function(){
+    return params.mouseX;
+  }
+  this.getMouseY = function(){
+    return params.mouseY;
+  }
 
 
   function init() {
@@ -608,6 +612,27 @@ function utomata(_wid, _hei)
 
   }
 
+  function processPgm(pgm){
+    pgm = pgm.replace(/max\s*\(/g, "mx(");
+    pgm = pgm.replace(/min\s*\(/g, "mn(");
+    pgm = pgm.replace(/mod\s*\(/g, "md(");
+    pgm = pgm.replace(/log\s*\(/g, "lg(");
+    pgm = pgm.replace(/pow\s*\(/g, "pw(");
+    pgm = pgm.replace(/dot\s*\(/g, "dt(");
+    pgm = pgm.replace(/sin\s*\(/g, "sn(");
+    pgm = pgm.replace(/cos\s*\(/g, "cs(");
+    pgm = pgm.replace(/tan\s*\(/g, "tn(");
+
+    if(params.useCastInt){
+      var integerRegex = new RegExp( /(\b(?<!\.)\d+(?!\.)\b)/g );
+      pgm = pgm.replace(integerRegex, '$1.0');
+    }
+
+    console.log(pgm);
+    return pgm;
+  }
+
+
   function saveImage(returnType) {
 
 
@@ -874,7 +899,7 @@ function utomata(_wid, _hei)
     }
 
     // GET A NEIGHBOUR RELATIVE TO SELF
-    vec4 val(float _x, float _y){
+    vec4 ask(float _x, float _y){
       return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(_x, _y)));
     }
 
@@ -896,22 +921,22 @@ function utomata(_wid, _hei)
         float mouseRadius = 1.0;
         vec4 config = vec(0.0, 0.0, 0.0, 1.0);
 
-        vec4 V = val(0.,0.);
-        vec4 V2 = val(0., 1.) + val(0.,-1.);
-        vec4 V3 = val(-1., -1.) + val(0., -1.) + val(1., -1.);
-        vec4 V4 = val(0., -1.) + val(0.,1.) + val(-1., 0.) + val(1.,0.);
+        vec4 V = ask(0.,0.);
+        vec4 V2 = ask(0., 1.) + ask(0.,-1.);
+        vec4 V3 = ask(-1., -1.) + ask(0., -1.) + ask(1., -1.);
+        vec4 V4 = ask(0., -1.) + ask(0.,1.) + ask(-1., 0.) + ask(1.,0.);
         vec4 V5 = V + V4;
-        vec4 V6 = val(-1., -1.) + val( 0., -1.) + val( 1., -1.) + val(-1., 1.) + val( 0., 1.) + val( 1., 1.);
+        vec4 V6 = ask(-1., -1.) + ask( 0., -1.) + ask( 1., -1.) + ask(-1., 1.) + ask( 0., 1.) + ask( 1., 1.);
         vec4 V7 = V + V6;
-        vec4 V8 = V4 + val(-1., -1.) + val( 1., -1.) + val(-1., 1.) + val( 1., 1.);
+        vec4 V8 = V4 + ask(-1., -1.) + ask( 1., -1.) + ask(-1., 1.) + ask( 1., 1.);
         vec4 V9 = V + V8;
-        vec4 V10 = V8 + val(0., -2.) + val(0., 2.);
+        vec4 V10 = V8 + ask(0., -2.) + ask(0., 2.);
         vec4 V11 = V10 + V;
-        vec4 V12 = V10 + val(-2., 0.) + val(2., 0.);
+        vec4 V12 = V10 + ask(-2., 0.) + ask(2., 0.);
         vec4 V13 = V12 + V;
-        vec4 V14 = V12 + val(0., -3.) + val(0., 3.);
+        vec4 V14 = V12 + ask(0., -3.) + ask(0., 3.);
         vec4 V15 = V14 + V;
-        vec4 V16 = V14 + val(-3., 0.) + val(3., 0.);
+        vec4 V16 = V14 + ask(-3., 0.) + ask(3., 0.);
         vec4 V17 = V16 + V;
     `
 
