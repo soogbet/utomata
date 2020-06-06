@@ -23,7 +23,7 @@ Cellular Automata (CA) is a computational model featuring a grid of elements (ce
          // run the system
          uto.run(`
             // reset all cells to random binary state
-            config = vec(rnd(random()));
+            config = vec(rnd(rdm()));
          
             // run conwway's game of life
             V = add(eql(3, V9), mlt(eql(4, V9), V));
