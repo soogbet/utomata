@@ -1,13 +1,13 @@
 
-## utomata (JS)
+## utomata is a javascript framework for cellular automata experiments.
 
-**utomata** is a lightweight javascript/WebGL framework for interactive cellular automata (CA) experiments. It performs calculations on the GPU and draws onto the HTML canvas element, allowing fast and interactive browser based implementations. utomata is designed for exploration and experimentation in computational art and design, modeling, simulation and procedural content generation. It uses a minimalist functinal syntax for describing transition functions and is capable of implementing any CA algorithm - from 1D Binary state elementary automata up to 4D continous state N-body systems.
+Cellular Automata (CA) is a computational model featuring a grid of elements (cells) that interact with their immediate naighbours. utomata performs these calculations on graphics hardware using webGL and draws the result onto the HTML canvas element. This enables it to run fast and interactive web based CA implementations. utomata is designed for exploration and experimentation in computational art and design, modeling, simulation and procedural content generation. It uses a minimalist functinal syntax for describing transition CA functions and is capable of implementing many CA algorithm: anything from 1D Binary state elementary automata, and up to 4D, continous state, N-body simulations such as swarms and fluids.
 
-*This project is still in early development. feel free to contact me for enquiries.* 
+*This project is in early stages of development. feel free to contact me for enquiries.* 
 
-* [Online editor](https://soogbet.github.io/utomata.js/)
-* [Programming guide](https://github.com/soogbet/utomata.js/wiki/Programming-guide)
-* [Language reference](https://github.com/soogbet/utomata.js/wiki/Language-reference)
+* [Online editor](https://soogbet.github.io/utomata)
+* [Programming guide](https://github.com/soogbet/utomata/wiki/Programming-guide)
+* [Language reference](https://github.com/soogbet/utomata/wiki/Language-reference)
 
 ## Basic usage
 
