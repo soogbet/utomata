@@ -19,8 +19,15 @@
       <script type="text/javascript">
          // create a system with one million cells
          var uto = new utomata(1024, 1024);
-         // run coways game of life
-         uto.run("V = add(eql(3.0, V9), mlt((eql(4.0, V9), V)))" );
+         
+         // run the system
+         uto.run(`
+            // reset all cells to random binary state
+            config = vec(rnd(random()));
+         
+            // run conwway's game of life
+            V = add(eql(3, V9), mlt(eql(4, V9), V));
+         `);
       </script>
    <head>
    <body>
