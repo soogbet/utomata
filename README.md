@@ -1,5 +1,5 @@
 
-## utomata.js
+## utomata (JS)
 
 **utomata** is a lightweight javascript/WebGL framework for interactive cellular automata (CA) experiments. It performs calculations on the GPU and draws onto the HTML canvas element, allowing fast and interactive browser based implementations. utomata is designed for exploration and experimentation in computational art and design, modeling, simulation and procedural content generation. It uses a minimalist functinal syntax for describing transition functions and is capable of implementing any CA algorithm - from 1D Binary state elementary automata up to 4D continous state N-body systems.
 
