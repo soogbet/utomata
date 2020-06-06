@@ -1,114 +1,255 @@
+<!--
+
+	TODO:
+
+	- color code all utomata keywords
+	- use url parameters in php
+	- add bulb for errors
+	- add an open recent menu
+	- tidy up code
+	- add watermark link to utomata file exports
+	- opt to make exports standaline - look into embeding the minified library in each exported file
+	- opt to name file when saving
+	- add full screen mode
+	
+ -->
+
 <!DOCTYPE html>
 <html lang="en">
 	<head>
 		<title>utomata editor</title>
 		<meta charset="utf-8">
-		<link href="https://fonts.googleapis.com/css2?family=Space+Mono&family=VT323&display=swap" rel="stylesheet">
 		<style media="screen">
 		*,*::before,*::after {box-sizing: border-box;margin: 0;padding: 0;}
-		body{background:#222;font-family: 'VT323', monospace; font-size: 14px; color: #F33; }
+		body{background:#AAA;font-family: Ariel, Helvetica, san-Serif, monospace; font-size: 12px;}
 		#mainCanvas{display:block; image-rendering: pixelated;image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; cursor: crosshair;}
 		#panel{
-			position: fixed;
-			top: 0;
-			left: 0;
 		  resize: both;
 		  border: 1px solid rgba(127,127,127, 0.3);
 		  border-top: none;
 		  border-left: none;
-			overflow-y: auto;
-			overflow-x: auto;
-		  min-width: 520px;
-		  min-height: 32px;
-			padding-top: 40px;
-			background: rgba(0, 0, 0, 0.8); color:#FFF; position:fixed; top:0; left:0;  height: 480px;
+			overflow: auto;
+		  min-width: 230px;
+		  min-height: 42px;
+			max-width: 100vw;
+		  max-height: 100vh;
+			width: 320px;
+			height: 480px;
+			background: #EEE; position:fixed; top:0; left:0;
 			z-index: 1;
 		}
+
 		#infoPanel{
-			position: fixed;
-			bottom: 4px;
-			left: 8px;
-			font-size: 11px;
+			background: #EEE;
+			position: sticky;
+			width: 100%;
+			font-size: 10px;
+			border-top: 1px solid rgba(127,127,127, 0.3);
+			padding:4px;
 		}
+
 		.ace_editor{
 		  background: none;
-			margin-left: 16px;
+
 		}
-		#header{z-index: 100; position: fixed; top: 11px; left:19px; width: 480px; display: flex; justify-content: space-between; }
-		.headerItem {color: #F33; cursor: pointer;}
-		.headerItem input{ text-align: center; border: 0; color:inherit; background:none;font-family: inherit; font-size: inherit}
+		.ace-container{
+			margin: 0 0 0 16px;
+			overflow: auto;
+			width: calc(100% - 16px);
+			height: calc(100% - 64px);
+		}
+		#header{background: white; z-index: 100; position: sticky; top: 0; border: 1px solid #999;  width: 100%;  }
+		#header h1{ font-size: 12px; font-weight: bold; text-align: center;}
+
+		.titlebar{ color: white; background: #0001A8;padding: 2px 25px; border-bottom: 2px solid #000;overflow: hidden;}
+		.toolbar{ color: black; width: 700px; overflow: hidden;}
+		.headerItem {display: inline-block; cursor: pointer; padding: 2px 16px}
+		.dropdownItem input{ text-align: center; border: none; color:inherit; background:none;font-family: inherit; font-size: 11px}
 		.noselect {-webkit-user-select: none;user-select: none;}
+
+		.menuBar{
+			background-color: #fff;
+			border: 1px solid #ccc;
+			height: 20px;
+		}
+
+#menu{
+	position: fixed;
+	top: 22px;
+  display:flex;
+	z-index: 1000;
+}
+
+.menuBtn {
+  cursor: pointer;
+  font-family: Arial, Helvetica, Sans-Serif;
+	font-size: 12px;
+	padding: 2px 16px;
+	position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  z-index: 1000;
+	display: none;
+  min-width: 160px;
+  padding: 5px 0;
+  margin: 2px 0 0 0 ;
+  list-style: none;
+  background-color: #fff;
+  border: 1px solid #ccc;
+  background-clip: padding-box;
+}
+.dropdown-menu a {
+	text-decoration: none;
+}
+.dropdown-menu a li {
+	font-size: 12px;
+	font-family: arial,sans-serif;
+	color: #222;
+	padding: 5px 15px;
+}
+
+.menuBtn:hover, .dropdown-menu a li:hover{
+  color: white;
+	background: #0001A8;
+}
+
+
+
 		</style>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.11/ace.min.js" type="text/javascript">	</script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.11/mode-glsl.min.js" type="text/javascript"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.11/theme-terminal.min.js" type="text/javascript"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.11/theme-iplastic.min.js" type="text/javascript"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/ace/1.4.11/theme-kuroir.min.js" type="text/javascript"></script>
+
 		<script src="utomata.js"></script>
 	</head>
 	<body ondrop="dropHandler(event);" ondragover="dragOverHandler(event);">
 
-		<div id="panel">
 
-		<div id="header">
-			<div class="headerItem noselect">
-				utomata(<input size="4" type="text" id="inputWid" value="1024">,<input size="4" type="text" id="inputHei" value="1024">)
+
+			<div id="menu">
+			  <div>
+			      <div class="menuBtn">File</div>
+			      <ul class="dropdown-menu">
+			        <a class="dropdownItem" href="#"><li>New</li></a>
+			        <a class="dropdownItem" href="#"><li>Duplicate</li></a>
+			        <hr>
+			        <a class="dropdownItem" href="#"><li>Examples...</li></a>
+							<hr>
+			        <a class="dropdownItem" id="inputSave" href="#"><li>Save (HTML)</li></a>
+			        <a class="dropdownItem" href="#"><li>Export (png)</li></a>
+			      </ul>
+			  </div>
+
+			  <div>
+			      <div class="menuBtn">Set</div>
+			      <ul class="dropdown-menu">
+			        <a class="dropdownItem" id="inputConfig" href="#"><li>config()</li></a>
+			        <a class="dropdownItem"  href="#"><li id="inputRun">stop()</li></a>
+			        <hr>
+			        <a class="dropdownItem" href="#"><li>width( <input size="4" type="text" id="inputWid" value="1024"> )</li></a>
+			        <a class="dropdownItem" href="#"><li>height( <input size="4" type="text" id="inputHei" value="1024"> )</li></a>
+			        <a class="dropdownItem" href="#"><li>fps( <input size="2" type="text"  id="inputFps" name="" value="60"> )</li></a>
+			        <a class="dropdownItem" href="#"><li>zoom( <input size="2" type="text"  id="inputZoom" name="" value="1"> )</li></a>
+			      </ul>
+			    </div>
+
+			  <div>
+			      <div class="menuBtn">View</div>
+			      <ul class="dropdown-menu">
+			        <a class="dropdownItem"  href="#"><li>Fullscreen</li></a>
+			        <a class="dropdownItem"  href="#"><li>Hide code</li></a>
+			        <a class="dropdownItem"  href="#"><li>Editor font-size</li></a>
+			      </ul>
+			  </div>
+
+			    <div>
+			      <div class="menuBtn">Help</div>
+			      <ul class="dropdown-menu">
+			        <a class="dropdownItem"  href="#"><li>Programming guide...</li></a>
+			        <a class="dropdownItem"  href="#"><li>Language reference...</li></a>
+			        <hr>
+			        <a class="dropdownItem"  href="#"><li>About...</li></a>
+			        <a class="dropdownItem"  href="#"><li>Source...</li></a>
+			      </ul>
+			  </div>
 			</div>
 
-			<div  id="inputConfig" class="headerItem  noselect">
-				config()
-			</div>
 
-			<div  id="inputRun" class="headerItem  noselect">
-				stop()
-			</div>
+			<div id="panel">
+				<div id="header">
+					<div class="titlebar">
+						<h1>utomata editor v0.1</h1>
+					</div>
+					<div class="menuBar"></div>
+				</div>
 
-			<div class="headerItem  noselect">
-				fps(<input size="2" type="text"  id="inputFps" name="" value="60">)
-			</div>
-
-			<div class="headerItem  noselect">
-				zoom(<input size="2" type="text"  id="inputZoom" name="" value="1">)
-			</div>
-
-			<div  id="inputSave" class="headerItem  noselect">
-				save()
-			</div>
-		</div>
+<div class="ace-container">
 
 
 		<textarea spellcheck="false" id="utoPgm">
-vec2 p0 = vec2(0.72, 0.129);
-vec2 p = vec2(0.2, 0.5) + vec2(0.19, 0.88) * vec2(0.8, 0.5);
-
-V= mlt(
-      add(
-         frc(V),
-         mlt(
-            sgn(
-               stp( vec(0.1,0.1, 1.0),
-               md(V4.rrrr, vec(p.x, p.y,0.0)))
-            ),
-            sub(
-               add(
-                  vec(p0.x, p0.y, 1.),
-                  mlt(
-                     (V4.rrgg - V4.ggrg),
-                     vec( 10.0, 0.1, 1.0)
-                  )
-               ),
-               frc(V.rrbr)
-            )
-         )
-      ),
-      vec(1.0, 0.988, 1.0)
-   );
+// reset the system to random binary states
+config = vec( rnd(random()) );
+// run conwway's game of life
+V = add(eql(3.0, V9), mlt(eql(4.0, V9), V));
 		</textarea>
+		</div>
+		<div id="infoPanel" class="noselect"></div>
 </div>
 
-<div id="infoPanel" class="noselect">
-
-</div>
 
 		<script>
+
+		//toggle dropdown menu open/close
+function toggle(e) {
+
+  e.stopPropagation();
+  closeAll();
+  var btn=this;
+  var menu = btn.nextSibling;
+
+  while(menu && menu.nodeType != 1) {
+     menu = menu.nextSibling
+  }
+  if(!menu) return;
+  if (menu.style.display !== 'block') {
+    menu.style.display = 'block';
+  }  else {
+    closeAll();
+    menu.style.display = 'none';
+  }
+
+};
+
+function closeAll() {
+   document.querySelectorAll(".dropdown-menu").forEach(function(menu){
+     menu.style.display='none';
+  });
+};
+
+window.addEventListener("DOMContentLoaded",function(){
+  document.querySelectorAll(".menuBtn").forEach(function(btn){
+     btn.addEventListener("click",toggle,true);
+  });
+  document.querySelectorAll(".dropdownItem").forEach(function(item){
+     item.addEventListener("click",function(e){
+       e.stopPropagation();
+     });
+  });
+});
+
+
+
+window.onclick=function(event){
+  closeAll();
+  // if (toClose){
+  // closeAll.call(event.target);
+  // }
+};
+
 
 		var isRunning = true;
 
@@ -118,7 +259,9 @@ V= mlt(
 		editor.session.setMode("ace/mode/glsl");
 
 		editor.setOption("showGutter", false);
-		editor.setTheme("ace/theme/terminal");
+		//editor.setTheme("ace/theme/terminal");
+		editor.setTheme("ace/theme/iplastic");
+
 	  editor.session.setMode("ace/mode/glsl");
 	  editor.renderer.setShowPrintMargin(false);
 	  editor.setOption("showInvisibles", false);
@@ -131,6 +274,7 @@ V= mlt(
 	  editor.setOption("fontSize", 14);
 	  editor.setAutoScrollEditorIntoView(true);
 	  editor.setOption("maxLines", "Infinity");
+
 
 		//var rules = editor.session.$mode.$highlightRules.getRules();
 		//console.log(rules);
@@ -151,10 +295,9 @@ V= mlt(
 		// force re-highlight whole document
 		// editor.session.bgTokenizer.start(0);
 
-
 		var useLocalStorage = true;
 		var uto;
-		var pgm = "";
+		var pgm = "V = V;";
 		var wid, hei, zoom, fps;
 
 		wid = document.getElementById("inputWid").value;
@@ -172,27 +315,30 @@ V= mlt(
 			if(localStorage.getItem("utomataWidth") !== null){
         // load last program
         wid = localStorage.getItem("utomataWidth");
+				document.getElementById("inputWid").value = wid;
       }
 			if(localStorage.getItem("utomataHeight") !== null){
         // load last program
         hei = localStorage.getItem("utomataHeight");
+				document.getElementById("inputHei").value = hei;
       }
 			if(localStorage.getItem("utomataZoom") !== null){
         // load last program
         zoom = localStorage.getItem("utomataZoom");
+				document.getElementById("inputZoom").value = zoom;
       }
 			if(localStorage.getItem("utomataFps") !== null){
         // load last program
         fps = localStorage.getItem("utomataFps");
+				document.getElementById("inputFps").value = fps;
       }
 		}
 
 		editor.setValue(pgm);
-
+		editor.clearSelection();
 		reset();
 
 		function reset(){
-
 			uto.size( wid, hei);
 			uto.run( editor.getValue() );
 			uto.zoom(zoom);
@@ -376,18 +522,20 @@ V= mlt(
 								reader.readAsText(file,"UTF-8");
 
 			        }else if(ext == 'png' || ext == 'jpg'){
-			          // var img = document.createElement("img");
-			          // img.classList.add("hidden");
-			          // img.file = file;
-								//
-			          // reader.onload = (
-			          //   function (aImg) { return function (e) {
-			          //    aImg.src = e.target.result;
-			          //    utomata.setInput(aImg);
-			          //    utomata.setup();
-			          //   };
-			          // })(img);
-			          // reader.readAsDataURL(file);
+			          var img = document.createElement("img");
+			          img.classList.add("hidden");
+			          img.file = file;
+
+			          reader.onload = (
+			            function (aImg) { return function (e) {
+			             aImg.src = e.target.result;
+			             uto.input(aImg);
+									 wid = uto.getWidth();
+									 hei = uto.getHeight();
+			             reset();
+			            };
+			          })(img);
+			          reader.readAsDataURL(file);
 			        }
 			      }
 			    }
@@ -431,6 +579,8 @@ V= mlt(
 			  // keeping the program so no real need for this:
 			  //return 'Are you sure you want to leave?';
 			};
+
+
 
 
 		</script>

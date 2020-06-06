@@ -12,17 +12,16 @@
 /*
 
 TODO:
-
 - add uniforms externally
-- implement zoom to multiply the canvas size in css
-- read from input image
+- config to image if using input
+- implement better incapsulation
+- allow input-output between two instances of utomata
 
 
 BUGS:
-- eql doesn't work
-- random doesn't work
 - REPEAT doesn't work
-
+- image loads reversed on Y axis
+- mouse is reveresed in Y axis
 */
 
 function utomata(_wid, _hei)
@@ -45,8 +44,10 @@ function utomata(_wid, _hei)
     mouseX: 0,
     mouseY: 0,
     startTime: Date.now(),
-    randSeed: 12341324.012341234,
-    useCastInt: true
+    randSeed: 123.01234,
+    useCastInt: true,
+    input: undefined,
+    useInput: false
   }
 
   // an array of key value pairs to use as uniforms for the shader
@@ -65,8 +66,6 @@ function utomata(_wid, _hei)
   var startTime = then;
   var now, elapsed;
 
-  var initImage;
-  var usingInitImage = false;
 
 
   if ( !window.requestAnimationFrame ) {
@@ -90,7 +89,10 @@ function utomata(_wid, _hei)
 
   this.run = function(_transition){
 
-    params.transition = processPgm(_transition);
+    if(_transition !== undefined){
+      params.transition = processPgm(_transition);
+    }
+
     params.startTime =  Date.now();
     running = true;
 
@@ -143,6 +145,10 @@ function utomata(_wid, _hei)
     return errors;
   }
 
+  this.input = function(img){
+    loadImage(img);
+  }
+
 
   this.zoom = function(newZ){
     params.zoom = Math.round(newZ);
@@ -154,6 +160,12 @@ function utomata(_wid, _hei)
   }
   this.getMouseY = function(){
     return params.mouseY;
+  }
+  this.getWidth = function(){
+    return params.width;
+  }
+  this.getHeight = function(){
+    return params.height;
   }
 
 
@@ -357,12 +369,9 @@ function utomata(_wid, _hei)
 
 
   //LOAD AN IMAGE
-  function loadImage(url) {
-
-    initImage = new Image();
-    initImage.crossOrigin = "";
-    initImage.src = url;
-    initImage.onload = function() {
+  function loadImage(img) {
+    params.input = img;
+    params.input.onload = function() {
 
       var width = this.width;
       var height = this.height;
@@ -375,7 +384,6 @@ function utomata(_wid, _hei)
 
       params.width = canvas.width;
       params.height = canvas.height;
-
 
       zoomCanvas();
 
@@ -395,7 +403,7 @@ function utomata(_wid, _hei)
 
       // set up framebuffer
       gl.bindTexture( gl.TEXTURE_2D, target.texture );
-      gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, initImage );
+      gl.texImage2D( gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, params.input );
 
       if(params.edge == "REPEAT" && isPowTwoSize()){
         gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT );
@@ -426,7 +434,7 @@ function utomata(_wid, _hei)
       // set render targets
       backTarget = target;
       frontTarget = createBackTarget(params.width, params.height );
-      usingInitImage = true;
+      params.useInput = true;
   }
 
   function isPowTwoSize(){
@@ -541,6 +549,7 @@ function utomata(_wid, _hei)
       params.step += 1;
     }
 
+
   }
 
   function render() {
@@ -548,7 +557,7 @@ function utomata(_wid, _hei)
     if ( !currentProgram ) return;
 
     params.time = Date.now() - params.startTime;
-
+    params.randSeed = Math.random();
     // Set uniforms for custom shader
 
     gl.useProgram( currentProgram );
@@ -892,10 +901,8 @@ function utomata(_wid, _hei)
 
     // RETURN A PSEUDO RANDOM NUMBER [0.0 - 1.0]
     float random() {
-      vec2 uv = gl_FragCoord.xy / resolution.xy;
-      vec2 st = uv * vec2(randSeed, -randSeed * 51345.01432341);
-      float res = fract(sin(dot(st.xy,vec2(12.9898,78.233))) * 43758.5453123);
-      return res;
+      vec2 st = gl_FragCoord.xy / resolution.xy;
+      return fract(sin(dot(st.xy, vec2(randSeed*12.9898,78.233)))* 43758.5453123);
     }
 
     // GET A NEIGHBOUR RELATIVE TO SELF
@@ -917,7 +924,7 @@ function utomata(_wid, _hei)
         float aspect = resolution.x/resolution.y;
 
         // global variables
-        vec4 mouseColor = vec4(1.0);
+        vec4 mouseColor = vec4(1.0, 1.0, 1.0, 1.0);
         float mouseRadius = 1.0;
         vec4 config = vec(0.0, 0.0, 0.0, 1.0);
 
@@ -964,7 +971,7 @@ function utomata(_wid, _hei)
 
     V = clamp(V, 0.0, 1.0);
 
-    gl_FragColor = vec4(V.rgb, 1.0);
+    gl_FragColor = V;//vec4(V.rgb, 1.0);
     }
     `
     return res;
