@@ -1,17 +1,25 @@
 <!--
 
 	TODO:
+	- tidy up code
 
 	- color code all utomata keywords
-	- use url parameters in php
-	- add bulb for errors
+
+	- use url parameters in php - pgm, width, height, fps, zoom, config
 	- add an open recent menu
-	- tidy up code
+	- get actual fps
+	- highlight error line
+
 	- add watermark link to utomata file exports
-	- opt to make exports standaline - look into embeding the minified library in each exported file
-	- opt to name file when saving
+	- window - opt to make exports standalone - look into embeding the minified library in each exported file
+	- window - opt to name file when saving
+	- window - opt to save file with current image as config (base64?)
+
 	- add full screen mode
-	
+	- import minimap from the IDE repo
+	- add good keyboard shortcuts
+
+	- inhouse examples window?
  -->
 
 <!DOCTYPE html>
@@ -39,14 +47,6 @@
 			z-index: 1;
 		}
 
-		#infoPanel{
-			background: #EEE;
-			position: sticky;
-			width: 100%;
-			font-size: 10px;
-			border-top: 1px solid rgba(127,127,127, 0.3);
-			padding:4px;
-		}
 
 		.ace_editor{
 		  background: none;
@@ -113,6 +113,45 @@
 .menuBtn:hover, .dropdown-menu a li:hover{
   color: white;
 	background: #0001A8;
+}
+
+#infoPanel{
+	display:flex;
+	justify-content: flex-start;
+	background: #EEE;
+	position: sticky;
+	width: 100%;
+	height: 20px;
+	font-size: 10px;
+	border-top: 1px solid rgba(127,127,127, 0.3);
+}
+
+#infoPanel>div{
+	margin: 3px 0 0 12px;
+	color: #666;
+	padding-top: 2px;
+	height: 16px;
+	overflow: hidden;
+}
+
+.infoSep{
+	border-left: 1px solid #999;
+}
+#statusBulb{
+	width: 8px;
+	height: 8px;
+	background: #0D6;
+	border-radius: 4px;
+	margin: 2px 0;
+
+}
+
+.redBack{
+	background: #F00 !important;
+}
+
+.redCol{
+	color: #F00 !important;
 }
 
 
@@ -197,7 +236,20 @@ config = vec( rnd(random()) );
 V = add(eql(3.0, V9), mlt(eql(4.0, V9), V));
 		</textarea>
 		</div>
-		<div id="infoPanel" class="noselect"></div>
+
+		<div id="infoPanel" class="noselect">
+			<div>
+			<div id="statusBulb"></div>
+			</div>
+			<div class="infoSep"></div>
+			<div id="statusText">
+
+			</div>
+			<div class="infoSep"></div>
+			<div id="mouseCoords">
+
+			</div>
+		</div>
 </div>
 
 
@@ -299,6 +351,7 @@ window.onclick=function(event){
 		var uto;
 		var pgm = "V = V;";
 		var wid, hei, zoom, fps;
+		var errors = [];
 
 		wid = document.getElementById("inputWid").value;
 		hei = document.getElementById("inputHei").value;
@@ -340,7 +393,7 @@ window.onclick=function(event){
 
 		function reset(){
 			uto.size( wid, hei);
-			uto.run( editor.getValue() );
+			runPgm();
 			uto.zoom(zoom);
 			uto.fps(fps);
 			uto.config();
@@ -360,8 +413,11 @@ window.onclick=function(event){
 			// uto.getInfo();
 
 			document.getElementById("mainCanvas").addEventListener("mousemove", function(e){
-				var info = "( " +uto.getMouseX() + " , " + uto.getMouseY() + " )";
-				document.getElementById("infoPanel").innerHTML = info;
+
+				var x = Math.round(uto.getMouseX() * 1000)/1000 ;
+				var y = Math.round(uto.getMouseY() * 1000)/1000 ;
+				var info = "mouse: [ " + x + " , " + y + " ]";
+				document.getElementById("mouseCoords").innerHTML = info;
 			})
 
 			document.getElementById("inputConfig").addEventListener('click', function(){
@@ -379,6 +435,22 @@ window.onclick=function(event){
 					isRunning = true;
 				}
 			});
+
+			function runPgm(){
+				uto.run( editor.getValue() );
+				errors = uto.errors();
+				console.log(errors);
+				if(errors.length > 0){
+					document.getElementById("statusBulb").classList.add("redBack");
+					document.getElementById("statusText").classList.add("redCol");
+					document.getElementById("statusText").innerHTML = errors[1];
+
+				}else{
+					document.getElementById("statusBulb").classList.remove("redBack");
+					document.getElementById("statusText").classList.remove("redCol");
+					document.getElementById("statusText").innerHTML = "Running at " +uto.getFps() + " fps."
+				}
+			}
 
 			document.getElementById("inputZoom").addEventListener('change', function(){
 				zoom = this.value;
@@ -445,7 +517,7 @@ window.onclick=function(event){
 				if(isRunning){
 					clearTimeout(editorTimeOut);
 					editorTimeOut = setTimeout(function(){
-							uto.run( editor.getValue() );
+							runPgm();
 					}, 300);
 				}
 			});

@@ -16,7 +16,9 @@ TODO:
 - config to image if using input
 - implement better incapsulation
 - allow input-output between two instances of utomata
-
+- create a minified version
+- function versions that handle vec2, vec3 types as well
+- bring back config setter function
 
 BUGS:
 - REPEAT doesn't work
@@ -116,6 +118,10 @@ function utomata(_wid, _hei)
   this.fps = function(_fps){
     params.fps = _fps;
     fpsInterval = 1000/params.fps;
+  }
+
+  this.getFps = function(){
+    return params.fps;
   }
 
 
@@ -500,7 +506,7 @@ function utomata(_wid, _hei)
         }
       }
 
-      console.error(errors);
+    //console.error(errors);
 
       return null;
 
@@ -900,7 +906,7 @@ function utomata(_wid, _hei)
     vec4 vec( float a, float b, float c, float d){return vec4(a, b, c, d);}
 
     // RETURN A PSEUDO RANDOM NUMBER [0.0 - 1.0]
-    float random() {
+    float rdm() {
       vec2 st = gl_FragCoord.xy / resolution.xy;
       return fract(sin(dot(st.xy, vec2(randSeed*12.9898,78.233)))* 43758.5453123);
     }
@@ -953,7 +959,7 @@ function utomata(_wid, _hei)
 
   function getUtoFragB(){
 
-    var res = `
+    var res = `;
     if(useMouse == true){
       float mousePos = length(mouse.xy *resolution - gl_FragCoord.xy);
       float t = clamp(mousePos - mouseRadius, 0.0, 1.0);
