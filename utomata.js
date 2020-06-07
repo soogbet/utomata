@@ -964,11 +964,16 @@ function utomata(_wid, _hei)
   function getUtoFragB(){
 
     var res = `;
-    if(useMouse == true){
-      float mousePos = length( (mouse.xy * resolution) - gl_FragCoord.xy);
-      float t = rnd(mousePos - mouseRadius);
-      vec4 layer2 = vec4(mouseColor.rgb, 1.0 - t);
-      V = mix(V, layer2, layer2.a * float(mouseDown));
+    // if(useMouse == true){
+    //   float mousePos = length( (mouse.xy * resolution) - gl_FragCoord.xy);
+    //   float t = rnd(mousePos - mouseRadius);
+    //   vec4 layer2 = vec4(mouseColor.rgb, 1.0 - t);
+    //   V = mix(V, layer2, layer2.a * float(mouseDown));
+    // }
+
+    float mouseDist = distance(mouse.xy * resolution, gl_FragCoord.xy);
+    if (useMouse == true && mouseDown == 1 && mouseDist <= mouseRadius + 0.5) {
+      V = mouseColor;
     }
 
     if(useAlpha == false){
