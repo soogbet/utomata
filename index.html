@@ -4,19 +4,13 @@
 	- tidy up code
 
 	- color code all utomata keywords
-
-	- use url parameters in php - pgm, width, height, fps, zoom, config
-	- add an open recent menu
-	- get actual fps
 	- highlight error line
 
 	- add watermark link to utomata file exports
 	- window - opt to make exports standalone - look into embeding the minified library in each exported file
-	- window - opt to name file when saving
 	- window - opt to save file with current image as config (base64?)
 
-	- add full screen mode
-	- import minimap from the IDE repo
+	- scroll event does not work and fix minimap
 	- add good keyboard shortcuts
 
 	- inhouse examples window?
@@ -29,11 +23,12 @@
 		<meta charset="utf-8">
 		<style media="screen">
 		*,*::before,*::after {box-sizing: border-box;margin: 0;padding: 0;}
+		html, body{ width:100vw; height: 100vh;}
 		body{background:#AAA;font-family: Ariel, Helvetica, san-Serif, monospace; font-size: 12px;}
-		#mainCanvas{display:block; image-rendering: pixelated;image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; cursor: crosshair;}
+		#mainCanvas{display:inline; image-rendering: pixelated;image-rendering: -moz-crisp-edges; image-rendering: crisp-edges; cursor: crosshair;}
 		#panel{
 		  resize: both;
-		  border: 1px solid rgba(127,127,127, 0.3);
+		  border: 2px outset #AAA;
 
 			overflow: auto;
 		  min-width: 230px;
@@ -55,7 +50,7 @@
 			margin: 0 0 0 16px;
 			overflow: auto;
 			width: calc(100% - 16px);
-			height: calc(100% - 64px);
+			height: calc(100% - 56px);
 		}
 		#header{background: white; z-index: 100; position: sticky; top: 0; border: 1px solid #999;  width: 100%;  }
 		#header h1{ font-size: 12px; font-weight: bold; text-align: center;}
@@ -69,12 +64,12 @@
 		.menuBar{
 			background-color: #fff;
 			border: 1px solid #ccc;
-			height: 20px;
+			height: 18px;
 		}
 
 #menu{
 	position: fixed;
-	top: 22px;
+	top: 23px;
   display:flex;
 	z-index: 1000;
 }
@@ -93,11 +88,16 @@
 	display: none;
   min-width: 160px;
   padding: 5px 0;
-  margin: 2px 0 0 0 ;
+  margin: 0 ;
   list-style: none;
   background-color: #fff;
   border: 1px solid #ccc;
   background-clip: padding-box;
+}
+
+.menuSep{
+	border-bottom: 1px solid rgba(127,127,127, 0.3);
+	margin: 4px 2px;
 }
 
 .dropdown-menu li {
@@ -123,21 +123,20 @@
 	background: #EEE;
 	position: sticky;
 	width: 100%;
-	height: 20px;
+	height: 18px;
 	font-size: 10px;
 	border-top: 1px solid rgba(127,127,127, 0.3);
 }
 
 #infoPanel>div{
-	margin: 3px 0 0 12px;
-	color: #666;
-	padding-top: 2px;
+	margin: 1px 0 1px 12px;
+	color: #333;
 	height: 16px;
 	overflow: hidden;
 }
 
 .infoSep{
-	border-left: 1px solid #999;
+	border-left: 1px solid rgba(127,127,127, 0.3);
 }
 #statusBulb{
 	width: 8px;
@@ -156,6 +155,31 @@
 	color: #F00 !important;
 }
 
+#zoomScreen{
+  background: rgba(255,255,255,0.8);
+  position:fixed;
+  right: 32px;
+  bottom: 1px;
+  /* display: none; */
+	z-index: 10000;
+}
+
+#zoomScreenInner{
+  background: rgba(0,0,0,0.8);
+  width: 0;
+  height: 0;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+#zoomIndicator{
+  position:fixed;
+  bottom: 39px;
+  right: 96px;
+  font-family: 'Press Start 2P', cursive;
+  font-size: 8px;
+}
 
 
 		</style>
@@ -176,9 +200,9 @@
 			        <li class="dropdownItem">New</li>
 			        <li class="dropdownItem">Duplicate</li>
 							<li class="dropdownItem" id="inputRestore">Restore last</li>
-			        <hr>
+			        <div class="menuSep"></div>
 			        <li class="dropdownItem">Examples...</li>
-							<hr>
+							<div class="menuSep"></div>
 			       <li  class="dropdownItem" id="inputSave">Save (HTML)</li>
 			        <li class="dropdownItem">Export (png)</li>
 			      </ul>
@@ -189,20 +213,20 @@
 			      <ul class="dropdown-menu">
 			        <li class="dropdownItem" id="inputConfig">config</li>
 			        <li class="dropdownItem" id="inputRun">stop</li>
-			        <hr>
-			        <li class="dropdownItem">width( <input size="4" type="text" id="inputWid" value="1024"> )</li>
-			        <li class="dropdownItem">height( <input size="4" type="text" id="inputHei" value="1024"> )</li>
-			        <li class="dropdownItem">fps( <input size="2" type="text"  id="inputFps" name="" value="60"> )</li>
-			        <li class="dropdownItem">zoom( <input size="2" type="text"  id="inputZoom" name="" value="1"> )</li>
+			        <div class="menuSep"></div>
+			        <li class="dropdownItem">width(<input size="4" type="text" id="inputWid" value="1024">)</li>
+			        <li class="dropdownItem">height(<input size="4" type="text" id="inputHei" value="1024">)</li>
+			        <li class="dropdownItem">fps(<input size="2" type="text"  id="inputFps" name="" value="60">)</li>
+			        <li class="dropdownItem">zoom(<input size="2" type="text"  id="inputZoom" name="" value="1">)</li>
 			      </ul>
 			    </div>
 
 			  <div>
 			      <div class="menuBtn">View</div>
 			      <ul class="dropdown-menu">
-			        <li class="dropdownItem">Fullscreen</li>
+			        <li class="dropdownItem" onclick="toggfullscreen()">Fullscreen</li>
 			        <li class="dropdownItem">Hide code</li>
-			        <li class="dropdownItem">Editor font-size</li>
+			        <li class="dropdownItem">font-size(<input size="2" type="text"  id="inputFont" value="14">)</li>
 			      </ul>
 			  </div>
 
@@ -211,7 +235,7 @@
 			      <ul class="dropdown-menu">
 			        <li class="dropdownItem">Programming guide...</li>
 			        <li class="dropdownItem">Language reference...</li>
-			        <hr>
+			        <div class="menuSep"></div>
 			        <li class="dropdownItem">About...</li>
 			        <li class="dropdownItem">Source...</li>
 			      </ul>
@@ -257,6 +281,10 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 		</div>
 </div>
 
+<div id="zoomScreen">
+	<div id="zoomScreenInner"></div>
+	<div id="zoomIndicator"></div>
+</div>
 
 		<script>
 
@@ -308,9 +336,67 @@ window.onclick=function(event){
 };
 
 
+document.body.addEventListener("scroll", onWindowScroll);
+
+function onWindowScroll(){
+  showWindowSizer();
+	console.log("scroll");
+}
+
+function showWindowSizer(){
+
+  var zScreen = document.getElementById('zoomScreen');
+  var zInner = document.getElementById('zoomScreenInner');
+  var canv = document.getElementById("mainCanvas");
+  var bdy = document.getElementsByTagName("BODY")[0];
+  var cw = canv.width;
+  var ch = canv.height;
+
+  var acw = parseInt(canv.style.width, 10);
+  var ach = parseInt(canv.style.height, 10);
+
+  var scrollLeft = window.pageXOffset || bdy.scrollLeft,
+    scrollTop = window.pageYOffset || bdy.scrollTop;
+
+  zScreen.style.display = 'block';
+
+  clearTimeout(zScreenTimeoutIndex);
+  zScreenTimeoutIndex = setTimeout(function(){ zScreen.style.display = 'none';}, 1000);
+
+  var sz = 42;
+
+  var w = sz;
+  var h = w * ch / cw;
+
+  if (h > w) {
+    h = sz;
+    w = h * cw / ch;
+  };
+
+  var iw = (w/acw) * window.innerWidth;
+  var ih = (h/ach) * window.innerHeight;
+
+  iw = Math.min(iw, w);
+  ih = Math.min(ih, h);
+
+  var ix = (w/acw) * scrollLeft;
+  var iy = (h/ach) * scrollTop;
+	console.log(w);
+  zScreen.style.width = w + 'px';
+  zScreen.style.height = h + 'px';
+
+  zInner.style.width = iw + 'px';
+  zInner.style.height = ih + 'px';
+  zInner.style.top = iy + 'px';
+  zInner.style.left = ix + 'px';
+}
+
+
+		var isFullscreenMode = false;
 		var isRunning = true;
 		var currFps = 0;
 		var editorTimeOut;
+		var infoInterval;
 		var editor = ace.edit('utoPgm');
 		editor.setTheme("ace/theme/terminal");
 		editor.session.setMode("ace/mode/glsl");
@@ -395,9 +481,6 @@ window.onclick=function(event){
 		}
 
 		uto = new utomata( wid, hei);
-		// uto.addEventListener("update", function(){
-		// 	if(isRunning)currFps = uto.getFps();
-		// });
 
 		//editor.setValue(pgm);
 		editor.clearSelection();
@@ -497,11 +580,17 @@ window.onclick=function(event){
 					}else{
 						document.getElementById("statusBulb").classList.remove("redBack");
 						document.getElementById("statusText").classList.remove("redCol");
-						document.getElementById("statusText").innerHTML = "Running";// at " + currFps + " fps."
+
 					}
+
+					infoInterval = setInterval(function(){
+						document.getElementById("statusText").innerHTML = "Running at " + uto.getFps() + " fps.";
+					}, 1000);
+
 					document.getElementById("inputRun").innerHTML = "stop";
 					isRunning = true;
 				}else{
+					clearInterval(infoInterval);
 					uto.stop();
 					document.getElementById("statusText").innerHTML = "Stopped";
 					document.getElementById("inputRun").innerHTML = "run";
@@ -525,6 +614,10 @@ window.onclick=function(event){
 			document.getElementById("inputHei").addEventListener('change',function(){
 				hei = this.value;
 				reset();
+			});
+
+			document.getElementById("inputFont").addEventListener('change',function(){
+			editor.setFontSize(this.value +"px");
 			});
 
 
@@ -732,6 +825,44 @@ window.onclick=function(event){
 			    return decodeURIComponent(results[2].replace(/\+/g, ' '));
 			}
 
+
+
+			function toggfullscreen(){
+			  if(isFullscreenMode){
+			    closeFullscreen();
+			    isFullscreenMode = false;
+			  }else{
+			    openFullscreen();
+			    isFullscreenMode = true;
+			  }
+			}
+
+			/* View in fullscreen */
+			function openFullscreen() {
+			  var elem = document.documentElement;
+			  if (elem.requestFullscreen) {
+			    elem.requestFullscreen();
+			  } else if (elem.mozRequestFullScreen) { /* Firefox */
+			    elem.mozRequestFullScreen();
+			  } else if (elem.webkitRequestFullscreen) { /* Chrome, Safari and Opera */
+			    elem.webkitRequestFullscreen();
+			  } else if (elem.msRequestFullscreen) { /* IE/Edge */
+			    elem.msRequestFullscreen();
+			  }
+			}
+
+			/* Close fullscreen */
+			function closeFullscreen() {
+			  if (document.exitFullscreen) {
+			    document.exitFullscreen();
+			  } else if (document.mozCancelFullScreen) { /* Firefox */
+			    document.mozCancelFullScreen();
+			  } else if (document.webkitExitFullscreen) { /* Chrome, Safari and Opera */
+			    document.webkitExitFullscreen();
+			  } else if (document.msExitFullscreen) { /* IE/Edge */
+			    document.msExitFullscreen();
+			  }
+			}
 
 
 

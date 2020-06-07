@@ -68,7 +68,8 @@ function utomata(_wid, _hei)
   var then = Date.now();
   var startTime = then;
   var now, elapsed;
-  //var updateEvent = new Event("update");
+  // var event = new Event('build');
+  var updateEvent = new Event("utomataUpdate");
 
 
   if ( !window.requestAnimationFrame ) {
@@ -181,13 +182,13 @@ function utomata(_wid, _hei)
   function init() {
 
     // create #mainCanvas
-  	var container = document.createElement( 'div' );
-    container.id = "mainCanvasContainer"
-  	document.body.appendChild( container );
+  	// var container = document.createElement( 'div' );
+    // container.id = "mainCanvasContainer"
+  	// document.body.appendChild( container );
 
   	canvas = document.createElement( 'canvas' );
     canvas.id = "mainCanvas";
-  	container.appendChild( canvas );
+  	document.body.appendChild( canvas );
 
   	// Initialise WebGL
   	try {
@@ -208,9 +209,15 @@ function utomata(_wid, _hei)
 
     canvas.addEventListener( 'mousedown', function ( event ) {
       params.mouseDown = 1;
+      var rect = canvas.getBoundingClientRect();
+      var clientX = (event.clientX - rect.left) / params.zoom;
+      var clientY = (event.clientY - rect.top) / params.zoom;
+
+      params.mouseX = clientX / params.width;
+      params.mouseY = 1 - ( (clientY) / (params.height) )  ;
     }, false );
 
-    canvas.addEventListener( 'mouseup', function ( event ) {
+    window.addEventListener( 'mouseup', function ( event ) {
       params.mouseDown = 0;
     }, false );
 
@@ -555,10 +562,12 @@ function utomata(_wid, _hei)
     if(running == true && (elapsed > fpsInterval) ){
       then = now - (elapsed % fpsInterval);
       var actualFPS = decimal(1/(elapsed/1000),0);
-      params.avgFps += decimal((actualFPS - params.avgFps) / 10 ,0);
+      //params.avgFps += decimal((actualFPS - params.avgFps) / 10 ,0);
+      params.avgFps = actualFPS;
       render();
       params.step += 1;
-      //dispatchEvent(updateEvent);
+      //console.log(this);
+
     }
   }
 
@@ -618,6 +627,7 @@ function utomata(_wid, _hei)
 
     // config can only happen once
     params.doConfig = 0;
+    //dispatchEvent(updateEvent);
   }
 
   function htmlEncode(str){
