@@ -49,7 +49,8 @@ function utomata(_wid, _hei)
     randSeed: 123.01234,
     useCastInt: true,
     input: undefined,
-    useInput: false
+    useInput: false,
+    avgFps: 60
   }
 
   // an array of key value pairs to use as uniforms for the shader
@@ -67,7 +68,7 @@ function utomata(_wid, _hei)
   var then = Date.now();
   var startTime = then;
   var now, elapsed;
-
+  //var updateEvent = new Event("update");
 
 
   if ( !window.requestAnimationFrame ) {
@@ -120,9 +121,7 @@ function utomata(_wid, _hei)
     fpsInterval = 1000/params.fps;
   }
 
-  this.getFps = function(){
-    return params.fps;
-  }
+
 
 
   // TODO: USE IN PROGRAM
@@ -145,12 +144,6 @@ function utomata(_wid, _hei)
     zoomCanvas();
   }
 
-
-  // GETTERS
-  this.errors = function(){
-    return errors;
-  }
-
   this.input = function(img){
     loadImage(img);
   }
@@ -159,6 +152,16 @@ function utomata(_wid, _hei)
   this.zoom = function(newZ){
     params.zoom = Math.round(newZ);
     zoomCanvas();
+  }
+
+  // GETTERS
+
+  this.getFps = function(){
+    return params.avgFps;
+  }
+
+  this.errors = function(){
+    return errors;
   }
 
   this.getMouseX = function(){
@@ -551,11 +554,12 @@ function utomata(_wid, _hei)
 
     if(running == true && (elapsed > fpsInterval) ){
       then = now - (elapsed % fpsInterval);
+      var actualFPS = decimal(1/(elapsed/1000),0);
+      params.avgFps += decimal((actualFPS - params.avgFps) / 10 ,0);
       render();
       params.step += 1;
+      //dispatchEvent(updateEvent);
     }
-
-
   }
 
   function render() {
@@ -961,8 +965,8 @@ function utomata(_wid, _hei)
 
     var res = `;
     if(useMouse == true){
-      float mousePos = length(mouse.xy *resolution - gl_FragCoord.xy);
-      float t = clamp(mousePos - mouseRadius, 0.0, 1.0);
+      float mousePos = length( (mouse.xy * resolution) - gl_FragCoord.xy);
+      float t = rnd(mousePos - mouseRadius);
       vec4 layer2 = vec4(mouseColor.rgb, 1.0 - t);
       V = mix(V, layer2, layer2.a * float(mouseDown));
     }

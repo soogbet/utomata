@@ -34,15 +34,14 @@
 		#panel{
 		  resize: both;
 		  border: 1px solid rgba(127,127,127, 0.3);
-		  border-top: none;
-		  border-left: none;
+
 			overflow: auto;
 		  min-width: 230px;
 		  min-height: 42px;
 			max-width: 100vw;
 		  max-height: 100vh;
-			width: 320px;
-			height: 480px;
+			width: 480px;
+			height: 240px;
 			background: #EEE; position:fixed; top:0; left:0;
 			z-index: 1;
 		}
@@ -100,19 +99,22 @@
   border: 1px solid #ccc;
   background-clip: padding-box;
 }
-.dropdown-menu a {
-	text-decoration: none;
-}
-.dropdown-menu a li {
+
+.dropdown-menu li {
 	font-size: 12px;
 	font-family: arial,sans-serif;
 	color: #222;
 	padding: 5px 15px;
+	cursor: pointer;
 }
 
-.menuBtn:hover, .dropdown-menu a li:hover{
+.menuBtn:hover, .dropdown-menu li:hover{
   color: white;
 	background: #0001A8;
+}
+
+.disabled{
+	color: #AAA !important;
 }
 
 #infoPanel{
@@ -167,52 +169,51 @@
 	</head>
 	<body ondrop="dropHandler(event);" ondragover="dragOverHandler(event);">
 
-
-
 			<div id="menu">
 			  <div>
 			      <div class="menuBtn">File</div>
 			      <ul class="dropdown-menu">
-			        <a class="dropdownItem" href="#"><li>New</li></a>
-			        <a class="dropdownItem" href="#"><li>Duplicate</li></a>
+			        <li class="dropdownItem">New</li>
+			        <li class="dropdownItem">Duplicate</li>
+							<li class="dropdownItem" id="inputRestore">Restore last</li>
 			        <hr>
-			        <a class="dropdownItem" href="#"><li>Examples...</li></a>
+			        <li class="dropdownItem">Examples...</li>
 							<hr>
-			        <a class="dropdownItem" id="inputSave" href="#"><li>Save (HTML)</li></a>
-			        <a class="dropdownItem" href="#"><li>Export (png)</li></a>
+			       <li  class="dropdownItem" id="inputSave">Save (HTML)</li>
+			        <li class="dropdownItem">Export (png)</li>
 			      </ul>
 			  </div>
 
 			  <div>
 			      <div class="menuBtn">Set</div>
 			      <ul class="dropdown-menu">
-			        <a class="dropdownItem" id="inputConfig" href="#"><li>config()</li></a>
-			        <a class="dropdownItem"  href="#"><li id="inputRun">stop()</li></a>
+			        <li class="dropdownItem" id="inputConfig">config</li>
+			        <li class="dropdownItem" id="inputRun">stop</li>
 			        <hr>
-			        <a class="dropdownItem" href="#"><li>width( <input size="4" type="text" id="inputWid" value="1024"> )</li></a>
-			        <a class="dropdownItem" href="#"><li>height( <input size="4" type="text" id="inputHei" value="1024"> )</li></a>
-			        <a class="dropdownItem" href="#"><li>fps( <input size="2" type="text"  id="inputFps" name="" value="60"> )</li></a>
-			        <a class="dropdownItem" href="#"><li>zoom( <input size="2" type="text"  id="inputZoom" name="" value="1"> )</li></a>
+			        <li class="dropdownItem">width( <input size="4" type="text" id="inputWid" value="1024"> )</li>
+			        <li class="dropdownItem">height( <input size="4" type="text" id="inputHei" value="1024"> )</li>
+			        <li class="dropdownItem">fps( <input size="2" type="text"  id="inputFps" name="" value="60"> )</li>
+			        <li class="dropdownItem">zoom( <input size="2" type="text"  id="inputZoom" name="" value="1"> )</li>
 			      </ul>
 			    </div>
 
 			  <div>
 			      <div class="menuBtn">View</div>
 			      <ul class="dropdown-menu">
-			        <a class="dropdownItem"  href="#"><li>Fullscreen</li></a>
-			        <a class="dropdownItem"  href="#"><li>Hide code</li></a>
-			        <a class="dropdownItem"  href="#"><li>Editor font-size</li></a>
+			        <li class="dropdownItem">Fullscreen</li>
+			        <li class="dropdownItem">Hide code</li>
+			        <li class="dropdownItem">Editor font-size</li>
 			      </ul>
 			  </div>
 
 			    <div>
 			      <div class="menuBtn">Help</div>
 			      <ul class="dropdown-menu">
-			        <a class="dropdownItem"  href="#"><li>Programming guide...</li></a>
-			        <a class="dropdownItem"  href="#"><li>Language reference...</li></a>
+			        <li class="dropdownItem">Programming guide...</li>
+			        <li class="dropdownItem">Language reference...</li>
 			        <hr>
-			        <a class="dropdownItem"  href="#"><li>About...</li></a>
-			        <a class="dropdownItem"  href="#"><li>Source...</li></a>
+			        <li class="dropdownItem">About...</li>
+			        <li class="dropdownItem">Source...</li>
 			      </ul>
 			  </div>
 			</div>
@@ -230,11 +231,15 @@
 
 
 		<textarea spellcheck="false" id="utoPgm">
-// reset the system to random binary states
-config = vec(rnd(rdm()));
-// run conwway's game of life
-V = add(eql(3.0, V9), mlt(eql(4.0, V9), V));
-		</textarea>
+// reset to rounded random initial state: 10% white
+config = vec( stp(rdm(), 0.1) );
+
+// change mouse radius to 10 cells
+mouseRadius = 10;
+
+// run Conway's game of life
+V= add(eql(3, V9), mlt(eql(4, V9), V));
+</textarea>
 		</div>
 
 		<div id="infoPanel" class="noselect">
@@ -277,7 +282,7 @@ function toggle(e) {
 };
 
 function closeAll() {
-   document.querySelectorAll(".dropdown-menu").forEach(function(menu){
+  document.querySelectorAll(".dropdown-menu").forEach(function(menu){
      menu.style.display='none';
   });
 };
@@ -304,7 +309,7 @@ window.onclick=function(event){
 
 
 		var isRunning = true;
-
+		var currFps = 0;
 		var editorTimeOut;
 		var editor = ace.edit('utoPgm');
 		editor.setTheme("ace/theme/terminal");
@@ -349,51 +354,58 @@ window.onclick=function(event){
 
 		var useLocalStorage = true;
 		var uto;
-		var pgm = "V = V;";
-		var wid, hei, zoom, fps;
+		var pgm = "";
+		var wid = 1024, hei = 1024, zoom = 2, fps = 60;
 		var errors = [];
 
-		wid = document.getElementById("inputWid").value;
-		hei = document.getElementById("inputHei").value;
-		zoom = document.getElementById("inputZoom").value;
-		fps = document.getElementById("inputFps").value;
+		var param = getParameterByName("wid");
+		if(param !== null){
+			wid = param;
+		}
+		param = getParameterByName("hei");
+		if(param !== null){
+			hei = param;
+		}
+		param = getParameterByName("zoom");
+		if(param !== null){
+			zoom = param;
+		}
+		param = getParameterByName("fps");
+		if(param !== null){
+			fps = param;
+		}
+		param = getParameterByName("pgm");
+		if(param !== null){
+			pgm = param;
+			editor.setValue(pgm);
+		}
+		console.log(pgm);
 
-		uto = new utomata( 1024, 1024);
+		document.getElementById("inputWid").value = wid;
+		document.getElementById("inputHei").value = hei;
+		document.getElementById("inputZoom").value = zoom;
+		document.getElementById("inputFps").value = fps;
+
+		document.getElementById("inputRestore").classList.add("disabled");
 
 		if (typeof(Storage) !== "undefined" && useLocalStorage) {
-      if(localStorage.getItem("utomataProgram") !== null){
-        // load last program
-        pgm = localStorage.getItem("utomataProgram");
-      }
-			if(localStorage.getItem("utomataWidth") !== null){
-        // load last program
-        wid = localStorage.getItem("utomataWidth");
-				document.getElementById("inputWid").value = wid;
-      }
-			if(localStorage.getItem("utomataHeight") !== null){
-        // load last program
-        hei = localStorage.getItem("utomataHeight");
-				document.getElementById("inputHei").value = hei;
-      }
-			if(localStorage.getItem("utomataZoom") !== null){
-        // load last program
-        zoom = localStorage.getItem("utomataZoom");
-				document.getElementById("inputZoom").value = zoom;
-      }
-			if(localStorage.getItem("utomataFps") !== null){
-        // load last program
-        fps = localStorage.getItem("utomataFps");
-				document.getElementById("inputFps").value = fps;
-      }
+			if(localStorage.getItem("utomataProgram") !== null){
+				document.getElementById("inputRestore").classList.remove("disabled");
+			}
 		}
 
-		editor.setValue(pgm);
+		uto = new utomata( wid, hei);
+		// uto.addEventListener("update", function(){
+		// 	if(isRunning)currFps = uto.getFps();
+		// });
+
+		//editor.setValue(pgm);
 		editor.clearSelection();
 		reset();
 
 		function reset(){
 			uto.size( wid, hei);
-			runPgm();
+			runPgm(true);
 			uto.zoom(zoom);
 			uto.fps(fps);
 			uto.config();
@@ -420,36 +432,82 @@ window.onclick=function(event){
 				document.getElementById("mouseCoords").innerHTML = info;
 			})
 
+
+
+			document.getElementById("inputRestore").addEventListener('click', function(){
+
+				var success = true;
+
+				if (typeof(Storage) !== "undefined" && useLocalStorage) {
+
+		      if(localStorage.getItem("utomataProgram") !== null){
+		        // load last program
+		        pgm = localStorage.getItem("utomataProgram");
+						editor.setValue(pgm);
+						editor.clearSelection();
+		      }
+					if(localStorage.getItem("utomataWidth") !== null){
+		        // load last program
+		        wid = localStorage.getItem("utomataWidth");
+						document.getElementById("inputWid").value = wid;
+		      }
+					if(localStorage.getItem("utomataHeight") !== null){
+		        // load last program
+		        hei = localStorage.getItem("utomataHeight");
+						document.getElementById("inputHei").value = hei;
+		      }
+					if(localStorage.getItem("utomataZoom") !== null){
+		        // load last program
+		        zoom = localStorage.getItem("utomataZoom");
+						document.getElementById("inputZoom").value = zoom;
+		      }
+					if(localStorage.getItem("utomataFps") !== null){
+		        // load last program
+		        fps = localStorage.getItem("utomataFps");
+						document.getElementById("inputFps").value = fps;
+		      }
+				}else{
+					return;
+				}
+				reset();
+			});
+
 			document.getElementById("inputConfig").addEventListener('click', function(){
 				uto.config();
 			});
 
 			document.getElementById("inputRun").addEventListener('click', function(){
-				if(isRunning){
-					uto.stop();
-					this.innerHTML = "run()";
-					isRunning = false;
-				}else{
-					uto.run();
-					this.innerHTML = "stop()";
-					isRunning = true;
-				}
+				runPgm(!isRunning);
 			});
 
-			function runPgm(){
-				uto.run( editor.getValue() );
-				errors = uto.errors();
-				console.log(errors);
-				if(errors.length > 0){
-					document.getElementById("statusBulb").classList.add("redBack");
-					document.getElementById("statusText").classList.add("redCol");
-					document.getElementById("statusText").innerHTML = errors[1];
 
+
+
+			function runPgm(val){
+
+				if(val == true){
+					uto.run( editor.getValue() );
+					errors = uto.errors();
+					console.log(errors);
+					if(errors.length > 0){
+						document.getElementById("statusBulb").classList.add("redBack");
+						document.getElementById("statusText").classList.add("redCol");
+						document.getElementById("statusText").innerHTML = errors[1];
+
+					}else{
+						document.getElementById("statusBulb").classList.remove("redBack");
+						document.getElementById("statusText").classList.remove("redCol");
+						document.getElementById("statusText").innerHTML = "Running";// at " + currFps + " fps."
+					}
+					document.getElementById("inputRun").innerHTML = "stop";
+					isRunning = true;
 				}else{
-					document.getElementById("statusBulb").classList.remove("redBack");
-					document.getElementById("statusText").classList.remove("redCol");
-					document.getElementById("statusText").innerHTML = "Running at " +uto.getFps() + " fps."
+					uto.stop();
+					document.getElementById("statusText").innerHTML = "Stopped";
+					document.getElementById("inputRun").innerHTML = "run";
+					isRunning = false;
 				}
+
 			}
 
 			document.getElementById("inputZoom").addEventListener('change', function(){
@@ -468,8 +526,6 @@ window.onclick=function(event){
 				hei = this.value;
 				reset();
 			});
-
-
 
 
 			document.getElementById("panel").addEventListener('mouseup', function(e){
@@ -493,22 +549,35 @@ window.onclick=function(event){
 				data += "</" + "script></html>";
 
 				var d = new Date();
-				var ds = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDay() + '-' + d.getHours() + '-' + d.getMinutes() + '-' + d.getSeconds();
-				var filename = "utoPgm-" + ds + ".html"
+
 				var file = new Blob([data], {type: "text/plain"});
+
 				if (window.navigator.msSaveOrOpenBlob) // IE10+
 						window.navigator.msSaveOrOpenBlob(file, filename);
 				else { // Others
-						var a = document.createElement("a"),
-						url = URL.createObjectURL(file);
-						a.href = url;
-						a.download = filename;
-						document.body.appendChild(a);
-						a.click();
-						setTimeout(function() {
-								document.body.removeChild(a);
-								window.URL.revokeObjectURL(url);
-						}, 0);
+
+					var ds = d.getFullYear() + '-' + d.getMonth() + '-' + d.getDay() + '-' + d.getHours() + '-' + d.getMinutes() + '-' + d.getSeconds();
+					var filename = "utoPgm-" + ds;
+
+					// prompt for file name
+					var prompter = prompt("Please enter file name:", filename);
+				  if (prompter == null || prompter == "") {
+						//filename = "utoPgm-" + ds + ".html";
+						return;
+				  } else {
+						filename = prompter + ".html";
+				  }
+
+					var a = document.createElement("a"),
+					url = URL.createObjectURL(file);
+					a.href = url;
+					a.download = filename;
+					document.body.appendChild(a);
+					a.click();
+					setTimeout(function() {
+							document.body.removeChild(a);
+							window.URL.revokeObjectURL(url);
+					}, 0);
 				}
 			});
 
@@ -517,7 +586,7 @@ window.onclick=function(event){
 				if(isRunning){
 					clearTimeout(editorTimeOut);
 					editorTimeOut = setTimeout(function(){
-							runPgm();
+							runPgm(true);
 					}, 300);
 				}
 			});
@@ -651,6 +720,17 @@ window.onclick=function(event){
 			  // keeping the program so no real need for this:
 			  //return 'Are you sure you want to leave?';
 			};
+
+
+			function getParameterByName(name, url) {
+			    if (!url) url = window.location.href;
+			    name = name.replace(/[\[\]]/g, '\\$&');
+			    var regex = new RegExp('[?&]' + name + '(=([^&#]*)|&|#|$)'),
+			        results = regex.exec(url);
+			    if (!results) return null;
+			    if (!results[2]) return '';
+			    return decodeURIComponent(results[2].replace(/\+/g, ' '));
+			}
 
 
 
