@@ -12,18 +12,13 @@
 /*
 
 TODO:
-- add uniforms externally
-- config to image if using input
 - implement better incapsulation
 - allow input-output between two instances of utomata
-- create a minified version
 - function versions that handle vec2, vec3 types as well
-- bring back config setter function
+- create a minified version
 
 BUGS:
 - REPEAT doesn't work
-- image loads reversed on Y axis
-- mouse is reveresed in Y axis
 */
 
 function utomata(_wid, _hei)
@@ -54,7 +49,7 @@ function utomata(_wid, _hei)
   }
 
   // an array of key value pairs to use as uniforms for the shader
-  var uniforms = [];
+  var uniforms = {};
 
   // GL vars
   var canvas, gl, buffer, currentProgram, vertexPosition;
@@ -110,11 +105,18 @@ function utomata(_wid, _hei)
 
   // SETTERS
 
-  this.config = function(){
-    // if(_conf !== 'undefined'){
-    //   params.config = _conf;
-    // }
-    params.doConfig = 1;
+  this.config = function(_conf){
+
+    if(_conf !== undefined){
+      params.config = _conf;
+    }
+
+    if(params.useInput){
+      setTargetsToImage();
+    }else{
+      params.doConfig = 1;
+    }
+
   }
 
   this.fps = function(_fps){
@@ -122,7 +124,9 @@ function utomata(_wid, _hei)
     fpsInterval = 1000/params.fps;
   }
 
-
+  this.setUniform = function(k, v){
+    uniforms[k] = v;
+  }
 
 
   // TODO: USE IN PROGRAM
@@ -146,9 +150,14 @@ function utomata(_wid, _hei)
   }
 
   this.input = function(img){
-    loadImage(img);
+    if(img instanceof HTMLImageElement){
+      loadImage(img);
+      params.useInput = true;
+    }else{
+      // anything else - just don't use it.
+      params.useInput = false;
+    }
   }
-
 
   this.zoom = function(newZ){
     params.zoom = Math.round(newZ);
@@ -214,7 +223,7 @@ function utomata(_wid, _hei)
       var clientY = (event.clientY - rect.top) / params.zoom;
 
       params.mouseX = clientX / params.width;
-      params.mouseY = 1 - ( (clientY) / (params.height) )  ;
+      params.mouseY = ( (clientY) / (params.height) )  ;
     }, false );
 
     window.addEventListener( 'mouseup', function ( event ) {
@@ -238,7 +247,7 @@ function utomata(_wid, _hei)
       var clientY = (event.clientY - rect.top) / params.zoom;
 
       params.mouseX = clientX / params.width;
-      params.mouseY = 1 - ( (clientY) / (params.height) )  ;
+      params.mouseY = ( (clientY) / (params.height) )  ;
 
     }, false );
 
@@ -291,6 +300,10 @@ function utomata(_wid, _hei)
     cacheUniformLocation( program, 'doConfig' );
     cacheUniformLocation( program, 'randSeed' );
 
+    for(var i = 0 ; i < Object.keys(uniforms).length; i++){
+      cacheUniformLocation( program, Object.keys(uniforms)[i] );
+
+    }
     // Load program into GPU
     gl.useProgram( currentProgram );
 
@@ -386,6 +399,7 @@ function utomata(_wid, _hei)
 
   //LOAD AN IMAGE
   function loadImage(img) {
+
     params.input = img;
     params.input.onload = function() {
 
@@ -450,7 +464,6 @@ function utomata(_wid, _hei)
       // set render targets
       backTarget = target;
       frontTarget = createBackTarget(params.width, params.height );
-      params.useInput = true;
   }
 
   function isPowTwoSize(){
@@ -589,6 +602,10 @@ function utomata(_wid, _hei)
     gl.uniform1i( currentProgram.uniformsCache[ 'mouseDown' ], params.mouseDown );
     gl.uniform1f( currentProgram.uniformsCache[ 'randSeed' ], params.randSeed );
 
+    for(var i = 0 ; i < Object.keys(uniforms).length; i++){
+      gl.uniform1f( currentProgram.uniformsCache[ Object.keys(uniforms)[i] ], uniforms[Object.keys(uniforms)[i]] );
+    }
+
     // TODO: instead of a slider use the uniforms array in a loop here
     //gl.uniform1f( currentProgram.uniformsCache[ 'slider' ], AdaptiveSlider.val );
 
@@ -714,6 +731,13 @@ function utomata(_wid, _hei)
     uniform int doConfig;
     uniform int mouseDown;
     uniform float randSeed;
+    `;
+
+    for(var i = 0 ; i < Object.keys(uniforms).length; i++){
+      res += "uniform float " + Object.keys(uniforms)[i] +";\n"
+    }
+
+    res +=`
 
     // ETC functions
 
@@ -946,7 +970,7 @@ function utomata(_wid, _hei)
         // global variables
         vec4 mouseColor = vec4(1.0, 1.0, 1.0, 1.0);
         float mouseRadius = 1.0;
-        vec4 config = vec(0.0, 0.0, 0.0, 1.0);
+        vec4 config = `+ params.config+`;
 
         vec4 V = ask(0.,0.);
         vec4 V2 = ask(0., 1.) + ask(0.,-1.);
@@ -1022,6 +1046,7 @@ function utomata(_wid, _hei)
     uniform sampler2D texture;
     void main() {
         vec2 uv = gl_FragCoord.xy / resolution.xy;
+        uv.y = 1.0 - uv.y;
         gl_FragColor = texture2D( texture, uv );
     }
     `

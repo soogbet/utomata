@@ -1,17 +1,19 @@
 <!--
+////////////////////////////////////
+// UTOMATA IDE
+//////////////////////////////////
+
+An online editor for utomata programs
+liorbengai 2020
 
 	TODO:
 	- tidy up code
-
 	- color code all utomata keywords
 	- highlight error line
-
 	- add watermark link to utomata file exports
 	- window - opt to make exports standalone - look into embeding the minified library in each exported file
 	- window - opt to save file with current image as config (base64?)
-
 	- scroll event does not work and fix minimap
-
 	- examples page
  -->
 
@@ -215,6 +217,9 @@
 			        <li class="dropdownItem" id="inputConfig">Config (cmd + a)</li>
 			        <li class="dropdownItem" id="inputRun">Stop (cmd + b)</li>
 			        <div class="menuSep"></div>
+							<li class="dropdownItem disabled" id="inputNoImg" onClick="noConfigImage()">Remove input image</li>
+
+							<div class="menuSep"></div>
 			        <li class="dropdownItem">Width(<input size="4" type="text" id="inputWid" value="1024">)</li>
 			        <li class="dropdownItem">Height(<input size="4" type="text" id="inputHei" value="1024">)</li>
 			        <li class="dropdownItem">Fps(<input size="2" type="text"  id="inputFps" name="" value="60">)</li>
@@ -370,7 +375,7 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 			restoreFromLocal();
 		}
 
-		console.log(pgm);
+
 
 		document.getElementById("inputWid").value = wid;
 		document.getElementById("inputHei").value = hei;
@@ -383,6 +388,9 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 				document.getElementById("inputRestore").classList.remove("disabled");
 			}
 		}
+
+		// set external uniforms
+		uto.setUniform("rad", 200.0);
 
 		reset();
 		editor.clearSelection();
@@ -594,7 +602,7 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 
 				var data = "<!DOCTYPE html><html lang='en' dir='ltr'><head><meta charset='utf-8'>";
 				data += '<style media="screen">*,*::before,*::after {box-sizing: border-box;margin: 0;padding: 0;}body{background:#222;}img, canvas{display:block; image-rendering: pixelated;image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;}</style>';
-				data += "<" + "script src='utomata.js'></"+"script></head><body><pre style='display:none;' id='utoPgm'>";
+				data += "<" + "script src='https://soogbet.github.io/utomata/utomata.js'></"+"script></head><body><pre style='display:none;' id='utoPgm'>";
 
 				data +=  editor.getValue();
 
@@ -758,6 +766,7 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 									 wid = uto.getWidth();
 									 hei = uto.getHeight();
 			             reset();
+									 document.getElementById("inputNoImg").classList.remove("disabled");
 			            };
 			          })(img);
 			          reader.readAsDataURL(file);
@@ -772,6 +781,13 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 			    // }
 			  }
 			}
+
+			function noConfigImage(e){
+				uto.input(false);
+				document.getElementById("inputNoImg").classList.add("disabled");
+				closeAll();
+			}
+
 
 			function getTagContent (html, id){
 
