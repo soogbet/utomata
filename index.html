@@ -11,9 +11,8 @@
 	- window - opt to save file with current image as config (base64?)
 
 	- scroll event does not work and fix minimap
-	- add good keyboard shortcuts
 
-	- inhouse examples window?
+	- examples page
  -->
 
 <!DOCTYPE html>
@@ -50,7 +49,7 @@
 			margin: 0 0 0 16px;
 			overflow: auto;
 			width: calc(100% - 16px);
-			height: calc(100% - 56px);
+			height: calc(100% - 60px);
 		}
 		#header{background: white; z-index: 100; position: sticky; top: 0; border: 1px solid #999;  width: 100%;  }
 		#header h1{ font-size: 12px; font-weight: bold; text-align: center;}
@@ -107,6 +106,9 @@
 	padding: 5px 15px;
 	cursor: pointer;
 }
+.dropdown-menu a{
+	text-decoration: none;
+}
 
 .menuBtn:hover, .dropdown-menu li:hover{
   color: white;
@@ -122,16 +124,15 @@
 	justify-content: flex-start;
 	background: #EEE;
 	position: sticky;
-	width: 100%;
-	height: 18px;
+	height: 16px;
 	font-size: 10px;
 	border-top: 1px solid rgba(127,127,127, 0.3);
 }
 
 #infoPanel>div{
-	margin: 1px 0 1px 12px;
+	margin: 3px 0 1px 12px;
 	color: #333;
-	height: 16px;
+	height: 13px;
 	overflow: hidden;
 }
 
@@ -197,47 +198,45 @@
 			  <div>
 			      <div class="menuBtn">File</div>
 			      <ul class="dropdown-menu">
-			        <li class="dropdownItem">New</li>
-			        <li class="dropdownItem">Duplicate</li>
+			        <li class="dropdownItem" onclick="duplicatePage(true)">New</li>
+			        <li class="dropdownItem" onclick="duplicatePage(false)">Duplicate (cmd + d)</li>
 							<li class="dropdownItem" id="inputRestore">Restore last</li>
 			        <div class="menuSep"></div>
-			        <li class="dropdownItem">Examples...</li>
+			        <li class="dropdownItem disabled">Examples...</li>
 							<div class="menuSep"></div>
 			       <li  class="dropdownItem" id="inputSave">Save (HTML)</li>
-			        <li class="dropdownItem">Export (png)</li>
+			        <li class="dropdownItem" onclick="saveImage('utomata', 'download')">Export (png)</li>
 			      </ul>
 			  </div>
 
 			  <div>
 			      <div class="menuBtn">Set</div>
 			      <ul class="dropdown-menu">
-			        <li class="dropdownItem" id="inputConfig">config</li>
-			        <li class="dropdownItem" id="inputRun">stop</li>
+			        <li class="dropdownItem" id="inputConfig">Config (cmd + a)</li>
+			        <li class="dropdownItem" id="inputRun">Stop (cmd + b)</li>
 			        <div class="menuSep"></div>
-			        <li class="dropdownItem">width(<input size="4" type="text" id="inputWid" value="1024">)</li>
-			        <li class="dropdownItem">height(<input size="4" type="text" id="inputHei" value="1024">)</li>
-			        <li class="dropdownItem">fps(<input size="2" type="text"  id="inputFps" name="" value="60">)</li>
-			        <li class="dropdownItem">zoom(<input size="2" type="text"  id="inputZoom" name="" value="1">)</li>
+			        <li class="dropdownItem">Width(<input size="4" type="text" id="inputWid" value="1024">)</li>
+			        <li class="dropdownItem">Height(<input size="4" type="text" id="inputHei" value="1024">)</li>
+			        <li class="dropdownItem">Fps(<input size="2" type="text"  id="inputFps" name="" value="60">)</li>
+			        <li class="dropdownItem">Zoom(<input size="2" type="text"  id="inputZoom" name="" value="1">)</li>
 			      </ul>
 			    </div>
 
 			  <div>
 			      <div class="menuBtn">View</div>
 			      <ul class="dropdown-menu">
-			        <li class="dropdownItem" onclick="toggfullscreen()">Fullscreen</li>
-			        <li class="dropdownItem">Hide code</li>
-			        <li class="dropdownItem">font-size(<input size="2" type="text"  id="inputFont" value="14">)</li>
+			        <li class="dropdownItem" onclick="toggfullscreen()">Full screen (cmd + u)</li>
+			        <li class="dropdownItem" onclick="hidePanel()">Hide panel (cmd + h)</li>
+			        <li class="dropdownItem">Font-size(<input size="2" type="text"  id="inputFont" value="14">)</li>
 			      </ul>
 			  </div>
 
 			    <div>
 			      <div class="menuBtn">Help</div>
 			      <ul class="dropdown-menu">
-			        <li class="dropdownItem">Programming guide...</li>
-			        <li class="dropdownItem">Language reference...</li>
-			        <div class="menuSep"></div>
-			        <li class="dropdownItem">About...</li>
-			        <li class="dropdownItem">Source...</li>
+			        <a href="https://github.com/soogbet/utomata/wiki/Programming-guide" target="_blank"><li class="dropdownItem">Programming guide...</li></a>
+			        <a href="https://github.com/soogbet/utomata/wiki/Language-reference" target="_blank"><li class="dropdownItem">Language reference...</li></a>
+			        <a href="location.href='https://github.com/soogbet/utomata" target="_blank"><li class="dropdownItem">Source...</li></a>
 			      </ul>
 			  </div>
 			</div>
@@ -287,110 +286,6 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 </div>
 
 		<script>
-
-		//toggle dropdown menu open/close
-function toggle(e) {
-
-  e.stopPropagation();
-  closeAll();
-  var btn=this;
-  var menu = btn.nextSibling;
-
-  while(menu && menu.nodeType != 1) {
-     menu = menu.nextSibling
-  }
-  if(!menu) return;
-  if (menu.style.display !== 'block') {
-    menu.style.display = 'block';
-  }  else {
-    closeAll();
-    menu.style.display = 'none';
-  }
-
-};
-
-function closeAll() {
-  document.querySelectorAll(".dropdown-menu").forEach(function(menu){
-     menu.style.display='none';
-  });
-};
-
-window.addEventListener("DOMContentLoaded",function(){
-  document.querySelectorAll(".menuBtn").forEach(function(btn){
-     btn.addEventListener("click",toggle,true);
-  });
-  document.querySelectorAll(".dropdownItem").forEach(function(item){
-     item.addEventListener("click",function(e){
-       e.stopPropagation();
-     });
-  });
-});
-
-
-
-window.onclick=function(event){
-  closeAll();
-  // if (toClose){
-  // closeAll.call(event.target);
-  // }
-};
-
-
-document.body.addEventListener("scroll", onWindowScroll);
-
-function onWindowScroll(){
-  showWindowSizer();
-	console.log("scroll");
-}
-
-function showWindowSizer(){
-
-  var zScreen = document.getElementById('zoomScreen');
-  var zInner = document.getElementById('zoomScreenInner');
-  var canv = document.getElementById("mainCanvas");
-  var bdy = document.getElementsByTagName("BODY")[0];
-  var cw = canv.width;
-  var ch = canv.height;
-
-  var acw = parseInt(canv.style.width, 10);
-  var ach = parseInt(canv.style.height, 10);
-
-  var scrollLeft = window.pageXOffset || bdy.scrollLeft,
-    scrollTop = window.pageYOffset || bdy.scrollTop;
-
-  zScreen.style.display = 'block';
-
-  clearTimeout(zScreenTimeoutIndex);
-  zScreenTimeoutIndex = setTimeout(function(){ zScreen.style.display = 'none';}, 1000);
-
-  var sz = 42;
-
-  var w = sz;
-  var h = w * ch / cw;
-
-  if (h > w) {
-    h = sz;
-    w = h * cw / ch;
-  };
-
-  var iw = (w/acw) * window.innerWidth;
-  var ih = (h/ach) * window.innerHeight;
-
-  iw = Math.min(iw, w);
-  ih = Math.min(ih, h);
-
-  var ix = (w/acw) * scrollLeft;
-  var iy = (h/ach) * scrollTop;
-	console.log(w);
-  zScreen.style.width = w + 'px';
-  zScreen.style.height = h + 'px';
-
-  zInner.style.width = iw + 'px';
-  zInner.style.height = ih + 'px';
-  zInner.style.top = iy + 'px';
-  zInner.style.left = ix + 'px';
-}
-
 
 		var isFullscreenMode = false;
 		var isRunning = true;
@@ -452,6 +347,10 @@ function showWindowSizer(){
 		if(param !== null){
 			hei = param;
 		}
+
+		uto = new utomata( wid, hei);
+
+
 		param = getParameterByName("zoom");
 		if(param !== null){
 			zoom = param;
@@ -465,6 +364,12 @@ function showWindowSizer(){
 			pgm = param;
 			editor.setValue(pgm);
 		}
+
+		param = getParameterByName("restore");
+		if(parseInt(param) == 1){
+			restoreFromLocal();
+		}
+
 		console.log(pgm);
 
 		document.getElementById("inputWid").value = wid;
@@ -473,18 +378,14 @@ function showWindowSizer(){
 		document.getElementById("inputFps").value = fps;
 
 		document.getElementById("inputRestore").classList.add("disabled");
-
 		if (typeof(Storage) !== "undefined" && useLocalStorage) {
 			if(localStorage.getItem("utomataProgram") !== null){
 				document.getElementById("inputRestore").classList.remove("disabled");
 			}
 		}
 
-		uto = new utomata( wid, hei);
-
-		//editor.setValue(pgm);
-		editor.clearSelection();
 		reset();
+		editor.clearSelection();
 
 		function reset(){
 			uto.size( wid, hei);
@@ -494,31 +395,82 @@ function showWindowSizer(){
 			uto.config();
 		}
 
-			// uto.stop();
-			// uto.go();
-			// uto.config("V = vec4(1.0, 0, 0, 1.0)");
 
-			// uto.getErrors();
 
-			// TODO:
-			// uto.input( tex );
-			// uto.var("key", value);
+		//toggle dropdown menu open/close
+		function toggle(e) {
 
-			// uto.getVar("key");
-			// uto.getInfo();
+		  e.stopPropagation();
+		  closeAll();
+		  var btn=this;
+		  var menu = btn.nextSibling;
 
-			document.getElementById("mainCanvas").addEventListener("mousemove", function(e){
+		  while(menu && menu.nodeType != 1) {
+		     menu = menu.nextSibling
+		  }
+		  if(!menu) return;
+		  if (menu.style.display !== 'block') {
+		    menu.style.display = 'block';
+		  }  else {
+		    closeAll();
+		    menu.style.display = 'none';
+		  }
 
-				var x = Math.round(uto.getMouseX() * 1000)/1000 ;
-				var y = Math.round(uto.getMouseY() * 1000)/1000 ;
-				var info = "mouse: [ " + x + " , " + y + " ]";
-				document.getElementById("mouseCoords").innerHTML = info;
-			})
+		};
 
+		function closeAll() {
+		  document.querySelectorAll(".dropdown-menu").forEach(function(menu){
+		     menu.style.display='none';
+		  });
+		};
+
+		window.addEventListener("DOMContentLoaded",function(){
+		  document.querySelectorAll(".menuBtn").forEach(function(btn){
+		     btn.addEventListener("click",toggle,true);
+		  });
+		  document.querySelectorAll(".dropdownItem").forEach(function(item){
+		     item.addEventListener("click",function(e){
+		       e.stopPropagation();
+		     });
+		  });
+		});
+
+		window.onclick=function(event){
+		  closeAll();
+		  // if (toClose){
+		  // closeAll.call(event.target);
+		  // }
+		};
+
+
+
+		document.getElementById("mainCanvas").addEventListener("mousemove", function(e){
+
+			var x = Math.round(uto.getMouseX() * 1000)/1000 ;
+			var y = Math.round(uto.getMouseY() * 1000)/1000 ;
+			var info = "mouse: [ " + x + " , " + y + " ]";
+			document.getElementById("mouseCoords").innerHTML = info;
+		})
 
 
 			document.getElementById("inputRestore").addEventListener('click', function(){
+				restoreFromLocal();
+			});
 
+
+			function duplicatePage(fresh){
+				var win;
+				if(fresh){
+					win = window.open(window.location.href, '_blank');
+				}else{
+					saveToLocal();
+				  win = window.open(window.location.href + "?restore=1", '_blank');
+				}
+  			win.focus();
+			}
+
+
+			function restoreFromLocal(){
 				var success = true;
 
 				if (typeof(Storage) !== "undefined" && useLocalStorage) {
@@ -553,7 +505,7 @@ function showWindowSizer(){
 					return;
 				}
 				reset();
-			});
+			}
 
 			document.getElementById("inputConfig").addEventListener('click', function(){
 				uto.config();
@@ -587,13 +539,13 @@ function showWindowSizer(){
 						document.getElementById("statusText").innerHTML = "Running at " + uto.getFps() + " fps.";
 					}, 1000);
 
-					document.getElementById("inputRun").innerHTML = "stop";
+					document.getElementById("inputRun").innerHTML = "stop  (cmd + b)";
 					isRunning = true;
 				}else{
 					clearInterval(infoInterval);
 					uto.stop();
 					document.getElementById("statusText").innerHTML = "Stopped";
-					document.getElementById("inputRun").innerHTML = "run";
+					document.getElementById("inputRun").innerHTML = "run  (cmd + b)";
 					isRunning = false;
 				}
 
@@ -620,13 +572,25 @@ function showWindowSizer(){
 			editor.setFontSize(this.value +"px");
 			});
 
-
 			document.getElementById("panel").addEventListener('mouseup', function(e){
 			  editor.resize();
 			});
 
 
 			document.getElementById("inputSave").addEventListener('click', function(){
+				saveHTML();
+			});
+
+			editor.getSession().on("change", function(){
+				if(isRunning){
+					clearTimeout(editorTimeOut);
+					editorTimeOut = setTimeout(function(){
+							runPgm(true);
+					}, 300);
+				}
+			});
+
+			function saveHTML(){
 
 				var data = "<!DOCTYPE html><html lang='en' dir='ltr'><head><meta charset='utf-8'>";
 				data += '<style media="screen">*,*::before,*::after {box-sizing: border-box;margin: 0;padding: 0;}body{background:#222;}img, canvas{display:block; image-rendering: pixelated;image-rendering: -moz-crisp-edges; image-rendering: crisp-edges;}</style>';
@@ -672,18 +636,50 @@ function showWindowSizer(){
 							window.URL.revokeObjectURL(url);
 					}, 0);
 				}
-			});
+			};
 
 
-			editor.getSession().on("change", function(){
-				if(isRunning){
-					clearTimeout(editorTimeOut);
-					editorTimeOut = setTimeout(function(){
-							runPgm(true);
-					}, 300);
-				}
-			});
+			// keyboard
+			document.addEventListener("keydown", function(e) {
+			  //CMD+S
+			  if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)  && e.keyCode == 83) {
+			    e.preventDefault();
+					saveHTML();
+			  }
 
+			  //CMD+B
+			  if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)  && e.keyCode == 66) {
+			    e.preventDefault();
+			    runPgm(!isRunning);
+			  }
+
+			  //CMD+H
+			  if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)  && e.keyCode == 72) {
+			    e.preventDefault();
+			    hidePanel();
+			  }
+
+				//CMD+A
+			  if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)  && e.keyCode == 65) {
+					e.preventDefault();
+			    uto.config();
+			  }
+
+				//CMD+D
+			  if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)  && e.keyCode == 68) {
+			    e.preventDefault();
+			    duplicatePage(true);
+			  }
+
+			  //CMD+U
+			  if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)  && e.keyCode == 85) {
+			    e.preventDefault();
+			    toggfullscreen();
+			  }
+
+			  // ...
+
+			}, false);
 
 
 			// SAVE CAMVAS AS PNG IN NEW TAB
@@ -691,12 +687,7 @@ function showWindowSizer(){
 			  // if(!isRunning){
 			  //   return;
 			  // }
-			  var dataURL = document.getElementById("utomataCanvas").toDataURL("image/png");
-
-			  // The returnType argument specifies how to get the
-			  // the image.  'obj' will set the source to an image element.
-			  // 'window' will open a new window and display the image.
-			  // 'download' will prompt the user to save the image.
+			  var dataURL = document.getElementById("mainCanvas").toDataURL("image/png");
 
 			  switch(returnType) {
 			    case 'obj':
@@ -705,20 +696,20 @@ function showWindowSizer(){
 			      document.getElementById('imageContainer').appendChild(imgObj);
 			      break;
 			    case 'window':
-			      window.open(dataURL, "Canvas Image");
+			      window.open(dataURL, "utomata export");
 			      break;
 			    case 'download':
 
-			      var dlLink = document.createElement('a');
-			      dlLink.download = fileName;
-			      dlLink.href = dataURL;//dataURL.replace("image/png", "image/octet-stream");
-			      dlLink.dataset.downloadurl = ["image/png", dlLink.download, dlLink.href].join(':');
+		      var dlLink = document.createElement('a');
+		      dlLink.download = fileName;
+		      dlLink.href = dataURL;//dataURL.replace("image/png", "image/octet-stream");
+		      dlLink.dataset.downloadurl = ["image/png", dlLink.download, dlLink.href].join(':');
 
-			      document.body.appendChild(dlLink);
-			      dlLink.click();
-			      document.body.removeChild(dlLink);
+		      document.body.appendChild(dlLink);
+		      dlLink.click();
+		      document.body.removeChild(dlLink);
 
-			      break;
+		      break;
 			  }
 			}
 
@@ -802,17 +793,20 @@ function showWindowSizer(){
 
 			window.onbeforeunload = function(){
 			  // Store current state
-			  if (typeof(Storage) !== "undefined") {
+			  saveToLocal();
+			  // keeping the program so no real need for this:
+			  //return 'Are you sure you want to leave?';
+			};
+
+			function saveToLocal(){
+				if (typeof(Storage) !== "undefined") {
 			    localStorage.setItem("utomataProgram", editor.getValue());
 					localStorage.setItem("utomataWidth", wid);
 					localStorage.setItem("utomataHeight", hei);
 					localStorage.setItem("utomataZoom", zoom);
 					localStorage.setItem("utomataFps", fps);
 			  }
-
-			  // keeping the program so no real need for this:
-			  //return 'Are you sure you want to leave?';
-			};
+			}
 
 
 			function getParameterByName(name, url) {
@@ -851,6 +845,7 @@ function showWindowSizer(){
 			  }
 			}
 
+
 			/* Close fullscreen */
 			function closeFullscreen() {
 			  if (document.exitFullscreen) {
@@ -862,6 +857,66 @@ function showWindowSizer(){
 			  } else if (document.msExitFullscreen) { /* IE/Edge */
 			    document.msExitFullscreen();
 			  }
+			}
+			document.body.addEventListener("scroll", onWindowScroll);
+
+			function hidePanel(){
+				document.getElementById("panel").style.width = "230px";
+				document.getElementById("panel").style.height = "42px";
+				closeAll();
+			}
+
+			function onWindowScroll(){
+			  showWindowSizer();
+				console.log("scroll");
+			}
+
+			function showWindowSizer(){
+
+			  var zScreen = document.getElementById('zoomScreen');
+			  var zInner = document.getElementById('zoomScreenInner');
+			  var canv = document.getElementById("mainCanvas");
+			  var bdy = document.getElementsByTagName("BODY")[0];
+			  var cw = canv.width;
+			  var ch = canv.height;
+
+			  var acw = parseInt(canv.style.width, 10);
+			  var ach = parseInt(canv.style.height, 10);
+
+			  var scrollLeft = window.pageXOffset || bdy.scrollLeft,
+			    scrollTop = window.pageYOffset || bdy.scrollTop;
+
+			  zScreen.style.display = 'block';
+
+			  clearTimeout(zScreenTimeoutIndex);
+			  zScreenTimeoutIndex = setTimeout(function(){ zScreen.style.display = 'none';}, 1000);
+
+			  var sz = 42;
+
+			  var w = sz;
+			  var h = w * ch / cw;
+
+			  if (h > w) {
+			    h = sz;
+			    w = h * cw / ch;
+			  };
+
+			  var iw = (w/acw) * window.innerWidth;
+			  var ih = (h/ach) * window.innerHeight;
+
+			  iw = Math.min(iw, w);
+			  ih = Math.min(ih, h);
+
+			  var ix = (w/acw) * scrollLeft;
+			  var iy = (h/ach) * scrollTop;
+				console.log(w);
+			  zScreen.style.width = w + 'px';
+			  zScreen.style.height = h + 'px';
+
+			  zInner.style.width = iw + 'px';
+			  zInner.style.height = ih + 'px';
+			  zInner.style.top = iy + 'px';
+			  zInner.style.left = ix + 'px';
 			}
 
 
