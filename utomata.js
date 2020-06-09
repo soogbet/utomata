@@ -887,12 +887,17 @@ function utomata(_wid, _hei)
     float dt(float a){return a;}
 
     // DISTANCE
+    float dst(float a){return a;}
+    float dst(vec2 a){return length(a);}
+    float dst(vec3 a){return length(a);}
+    float dst(vec4 a){return length(a);}
+    float dst(vec2 a, vec2 b){return distance(a,b);}
+    float dst(vec3 a, vec3 b){return distance(a,b);}
     float dst(vec4 a, vec4 b){return distance(a,b);}
     float dst(float a, float b){return distance(a,b);}
     float dst(float a, vec4 b){return distance(vec4(a), b);}
     float dst(vec4 a, float b){return distance(a, vec4(b));}
-    float dst(vec4 a){return length(a);}
-    float dst(float a){return 0.0;}
+
 
     // NORMALIZE
     vec4 nrm(vec4 a){return normalize(a);}
@@ -951,7 +956,17 @@ function utomata(_wid, _hei)
 
     // GET A NEIGHBOUR RELATIVE TO SELF
     vec4 ask(float _x, float _y){
+      return texture2D( backbuffer, vec2(_x, _y) );
+    }
+
+    vec4 U(float _x){
+      return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(_x, 0.0)));
+    }
+    vec4 U(float _x, float _y){
       return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(_x, _y)));
+    }
+    vec4 U(vec2 p){
+      return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(p.x, p.y)));
     }
 
 
@@ -961,33 +976,31 @@ function utomata(_wid, _hei)
     void main()
     {
         // VARS
-        vec2 uv = gl_FragCoord.xy / resolution.xy;
-        vec2 pixel = 1.0/resolution;
-        bool useMouse = true;
-        bool useAlpha = false;
-        float aspect = resolution.x/resolution.y;
+        vec2  uv = gl_FragCoord.xy / resolution.xy;
+        vec2  fragSize = 1.0/resolution;
+        bool  useMouse = true;
+        bool  useAlpha = false;
+        float aspectRatio = resolution.x/resolution.y;
+        vec4  mouseColor = vec4(1.0);
+        float mouseRadius = fragSize.x;
+        vec4  config = `+ params.config+`;
 
-        // global variables
-        vec4 mouseColor = vec4(1.0, 1.0, 1.0, 1.0);
-        float mouseRadius = 1.0;
-        vec4 config = `+ params.config+`;
-
-        vec4 V = ask(0.,0.);
-        vec4 V2 = ask(0., 1.) + ask(0.,-1.);
-        vec4 V3 = ask(-1., -1.) + ask(0., -1.) + ask(1., -1.);
-        vec4 V4 = ask(0., -1.) + ask(0.,1.) + ask(-1., 0.) + ask(1.,0.);
+        vec4 V =  U(0.,0.);
+        vec4 V2 = U(0., 1.) + U(0.,-1.);
+        vec4 V3 = U(-1., -1.) + U(0., -1.) + U(1., -1.);
+        vec4 V4 = U(0., -1.) + U(0.,1.) + U(-1., 0.) + U(1.,0.);
         vec4 V5 = V + V4;
-        vec4 V6 = ask(-1., -1.) + ask( 0., -1.) + ask( 1., -1.) + ask(-1., 1.) + ask( 0., 1.) + ask( 1., 1.);
+        vec4 V6 = V3 + U(-1., 1.) + U( 0., 1.) + U( 1., 1.);
         vec4 V7 = V + V6;
-        vec4 V8 = V4 + ask(-1., -1.) + ask( 1., -1.) + ask(-1., 1.) + ask( 1., 1.);
+        vec4 V8 = V4 + U(-1., -1.) + U( 1., -1.) + U(-1., 1.) + U( 1., 1.);
         vec4 V9 = V + V8;
-        vec4 V10 = V8 + ask(0., -2.) + ask(0., 2.);
+        vec4 V10 = V8 + U(0., -2.) + U(0., 2.);
         vec4 V11 = V10 + V;
-        vec4 V12 = V10 + ask(-2., 0.) + ask(2., 0.);
+        vec4 V12 = V10 + U(-2., 0.) + U(2., 0.);
         vec4 V13 = V12 + V;
-        vec4 V14 = V12 + ask(0., -3.) + ask(0., 3.);
+        vec4 V14 = V12 + U(0., -3.) + U(0., 3.);
         vec4 V15 = V14 + V;
-        vec4 V16 = V14 + ask(-3., 0.) + ask(3., 0.);
+        vec4 V16 = V14 + U(-3., 0.) + U(3., 0.);
         vec4 V17 = V16 + V;
     `
 

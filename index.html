@@ -454,8 +454,8 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 
 		document.getElementById("mainCanvas").addEventListener("mousemove", function(e){
 
-			var x = Math.round(uto.getMouseX() * 1000)/1000 ;
-			var y = Math.round(uto.getMouseY() * 1000)/1000 ;
+			var x = Math.round(uto.getMouseX() * 10000)/10000 ;
+			var y = Math.round(uto.getMouseY() * 10000)/10000 ;
 			var info = "mouse: [ " + x + " , " + y + " ]";
 			document.getElementById("mouseCoords").innerHTML = info;
 		})
@@ -536,16 +536,14 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 						document.getElementById("statusBulb").classList.add("redBack");
 						document.getElementById("statusText").classList.add("redCol");
 						document.getElementById("statusText").innerHTML = errors[1];
-
+						clearInterval(infoInterval);
 					}else{
 						document.getElementById("statusBulb").classList.remove("redBack");
 						document.getElementById("statusText").classList.remove("redCol");
-
+						infoInterval = setInterval(function(){
+							document.getElementById("statusText").innerHTML = "Running at " + uto.getFps() + " fps.";
+						}, 1000);
 					}
-
-					infoInterval = setInterval(function(){
-						document.getElementById("statusText").innerHTML = "Running at " + uto.getFps() + " fps.";
-					}, 1000);
 
 					document.getElementById("inputRun").innerHTML = "stop  (cmd + b)";
 					isRunning = true;
@@ -610,6 +608,7 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 				data += 'var uto;uto = new utomata(' + wid + ', ' + hei + ');';
 				data += 'uto.zoom(' + zoom + ');';
 				data += 'uto.fps(' + fps + ');';
+				data += 'uto.config();';
 				data += 'uto.run(document.getElementById("utoPgm").innerHTML);';
 				data += "</" + "script></html>";
 
