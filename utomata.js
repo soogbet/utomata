@@ -16,6 +16,10 @@ TODO:
 - allow input-output between two instances of utomata
 - function versions that handle vec2, vec3 types as well
 - create a minified version
+- config and input are a bt confused:
+  - the input fragment should be available via the I vec4.
+  - it can be run over in the program (or if no image was given)
+  - calling uto.config() does V=I; at the end of main
 
 BUGS:
 - REPEAT doesn't work
