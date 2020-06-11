@@ -1,7 +1,7 @@
 
 # utomata
 
-A javascript/webGL framework for interactive, browser based [Cellular Automata] (https://en.wikipedia.org/wiki/Cellular_automaton) experiments. It is designed for exploration of nonlinear systems in computational arts and design, modelling, simulation and procedural content generation.
+A javascript/webGL framework for interactive, browser based [Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) experiments. It is designed for exploration of nonlinear systems in computational arts and design, modelling, simulation and procedural content generation.
 
 utomata performs all calculations on the graphics card and draws the result onto the HTML canvas element. It uses a minimalist functional syntax, based on GLSL, for describing transition functions. The framework is capable of describing a wide range of models including binary state automata, 2D continuous state systems, reaction-diffusion and  even N-body systems, such as swarms or particle systems.
 
