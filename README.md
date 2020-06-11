@@ -1,8 +1,9 @@
 
 # utomata
-### A javascript/webGL framework for cellular automata experiments
 
-Cellular Automata (CA) is a computational model that features a grid of elements (cells) that interact with their immediate neighbours. utomata performs these calculations on graphics hardware using webGL and draws the result onto the HTML canvas element. It is designed for exploration and experimentation in computational arts and design, modelling, simulation and procedural content generation. The framework uses a minimalist functional syntax for describing CA programs, Based on GLSL. It is capable of describing anything from 1D Binary state elementary automata, up to 4D continuos state N-body simulations.
+A javascript/webGL framework for interactive, browser based [Cellular Automata] (https://en.wikipedia.org/wiki/Cellular_automaton) experiments. It is designed for exploration of nonlinear systems in computational arts and design, modelling, simulation and procedural content generation.
+
+utomata performs all calculations on the graphics card and draws the result onto the HTML canvas element. It uses a minimalist functional syntax, based on GLSL, for describing transition functions. The framework is capable of describing a wide range of models including binary state automata, 2D continuous state systems, reaction-diffusion and  even N-body systems, such as swarms or particle systems.
 
 *This project is in early stages of development. Please contact me for enquiries.* 
 
