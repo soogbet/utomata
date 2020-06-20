@@ -265,10 +265,10 @@ liorbengai 2020
 
 		<textarea spellcheck="false" id="utoPgm">
 // reset to rounded random initial state: 10% white
-config = vec( stp(rdm(), 0.1) );
+conf = vec( stp(rdm(), 0.1) );
 
 // change mouse radius to 10 cells
-mouseRadius = 10;
+irad = 10;
 
 // run Conway's game of life
 V= add(eql(3, V9), mlt(eql(4, V9), V));

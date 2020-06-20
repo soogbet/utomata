@@ -977,7 +977,6 @@ function utomata(_wid, _hei)
       return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(p.x, p.y)));
     }
 
-
     `
 
     res += `
@@ -986,16 +985,16 @@ function utomata(_wid, _hei)
         // VARS
         vec2  uv = gl_FragCoord.xy / resolution.xy;
         float aspectRatio = resolution.x/resolution.y;
-        vec4  config = `+ params.config+`;
 
         // new name conventions
+        bool useAlpha = false;
         vec4 cell = vec4( uv.x, uv.y, 0.0, 0.0 );
         vec2 grid = vec2(resolution.x, resolution.y );
-        cell.w = min(1.0/grid.x, 1.0/grid.y);
-        vec4 conf = config;
+        vec4  conf = `+ params.config+`;
+        cell.w = max(1.0/grid.x, 1.0/grid.y);
         vec2 ipos = mouse;
         vec4 icol = vec4(1.0);
-        float irad = cell.w;
+        float irad = 1.0;
 
         // neighbourhood shortcuts
         vec4 V =  U(0.,0.);
@@ -1017,29 +1016,16 @@ function utomata(_wid, _hei)
   function getUtoFragB(){
 
     var res = `;
-    // if(useMouse == true){
-    //   float mousePos = length( (mouse.xy * resolution) - gl_FragCoord.xy);
-    //   float t = rnd(mousePos - mouseRadius);
-    //   vec4 layer2 = vec4(mouseColor.rgb, 1.0 - t);
-    //   V = mix(V, layer2, layer2.a * float(mouseDown));
-    // }
-
-    float mouseDist = distance(mouse.xy * grid.xy, gl_FragCoord.xy);
-    if (mouseDown == 1 && mouseDist <= irad + 0.5) {
+    float mouseDist = distance(ipos.xy * grid.xy , gl_FragCoord.xy);
+    if (mouseDown == 1 && mouseDist <= (irad) + 0.5) {
       V = icol;
     }
-
-    // if(useAlpha == false){
-    //   V.a = 1.0;
-    // }
-
-
-    V = (doConfig * config) + ((1.0-doConfig) * V);
-
-
+    if(useAlpha == false){
+      V.a = 1.0;
+    }
+    V = (doConfig * conf) + ((1.0-doConfig) * V);
     V = clamp(V, 0.0, 1.0);
-
-    gl_FragColor = vec4(V.rgb, 1.0);
+    gl_FragColor = V;
     }
     `
     return res;
