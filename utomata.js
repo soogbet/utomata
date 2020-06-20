@@ -19,7 +19,9 @@ TODO:
 - config and input are a bt confused:
   - the input fragment should be available via the I vec4.
   - it can be run over in the program (or if no image was given)
-  - calling uto.config() does V=I; at the end of main
+  - using config = I;
+- add step uniform
+- How about adding a T(d) function that returns the sum of neighbours within d distance from uv ?
 
 BUGS:
 - REPEAT doesn't work
@@ -40,11 +42,12 @@ function utomata(_wid, _hei)
     fps: 60,
     zoom: 1,
     step: 0,
+    elapsedTime: 0,
+    startTime: Date.now(),
     mouseDown: 0,
     mouseOver: 0,
     mouseX: 0,
     mouseY: 0,
-    startTime: Date.now(),
     randSeed: 123.01234,
     useCastInt: true,
     input: undefined,
@@ -64,6 +67,7 @@ function utomata(_wid, _hei)
   var running = true;
   var fpsInterval = 1000/params.fps;
 
+  // animation vars (TODO: remove?)
   var then = Date.now();
   var startTime = then;
   var now, elapsed;
@@ -120,7 +124,7 @@ function utomata(_wid, _hei)
     }else{
       params.doConfig = 1;
     }
-
+    params.step = 0;
   }
 
   this.fps = function(_fps){
@@ -303,6 +307,7 @@ function utomata(_wid, _hei)
     cacheUniformLocation( program, 'backbuffer' );
     cacheUniformLocation( program, 'doConfig' );
     cacheUniformLocation( program, 'randSeed' );
+    // cacheUniformLocation( program, 'timeStep' );
 
     for(var i = 0 ; i < Object.keys(uniforms).length; i++){
       cacheUniformLocation( program, Object.keys(uniforms)[i] );
@@ -375,6 +380,7 @@ function utomata(_wid, _hei)
     if(params.edge == "REPEAT" && isPowTwoSize()){
       gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT );
       gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT );
+
 
     }else {
       gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
@@ -592,26 +598,24 @@ function utomata(_wid, _hei)
 
     if ( !currentProgram ) return;
 
-    params.time = Date.now() - params.startTime;
+    params.elapsedTime = Date.now() - params.startTime;
     params.randSeed = Math.random();
     // Set uniforms for custom shader
 
     gl.useProgram( currentProgram );
 
-    gl.uniform1f( currentProgram.uniformsCache[ 'time' ], params.time / 1000 );
+    gl.uniform1f( currentProgram.uniformsCache[ 'time' ], params.step );
     gl.uniform2f( currentProgram.uniformsCache[ 'mouse' ], params.mouseX, params.mouseY );
     gl.uniform2f( currentProgram.uniformsCache[ 'resolution' ], params.width, params.height );
     gl.uniform1i( currentProgram.uniformsCache[ 'backbuffer' ], 0 );
-    gl.uniform1i( currentProgram.uniformsCache[ 'doConfig' ], params.doConfig );
+    gl.uniform1f( currentProgram.uniformsCache[ 'doConfig' ], params.doConfig );
     gl.uniform1i( currentProgram.uniformsCache[ 'mouseDown' ], params.mouseDown );
     gl.uniform1f( currentProgram.uniformsCache[ 'randSeed' ], params.randSeed );
+    //gl.uniform1f( currentProgram.uniformsCache[ 'timeStep' ], params.step );
 
     for(var i = 0 ; i < Object.keys(uniforms).length; i++){
       gl.uniform1f( currentProgram.uniformsCache[ Object.keys(uniforms)[i] ], uniforms[Object.keys(uniforms)[i]] );
     }
-
-    // TODO: instead of a slider use the uniforms array in a loop here
-    //gl.uniform1f( currentProgram.uniformsCache[ 'slider' ], AdaptiveSlider.val );
 
     gl.activeTexture( gl.TEXTURE0 );
     gl.bindTexture( gl.TEXTURE_2D, backTarget.texture );
@@ -732,7 +736,7 @@ function utomata(_wid, _hei)
     uniform vec2 resolution;
     uniform sampler2D backbuffer;
 
-    uniform int doConfig;
+    uniform float doConfig;
     uniform int mouseDown;
     uniform float randSeed;
     `;
@@ -981,16 +985,22 @@ function utomata(_wid, _hei)
     {
         // VARS
         vec2  uv = gl_FragCoord.xy / resolution.xy;
-        vec2  fragSize = 1.0/resolution;
-        bool  useMouse = true;
-        bool  useAlpha = false;
         float aspectRatio = resolution.x/resolution.y;
-        vec4  mouseColor = vec4(1.0);
-        float mouseRadius = fragSize.x;
         vec4  config = `+ params.config+`;
 
+        // new name conventions
+        vec4 cell = vec4( uv.x, uv.y, 0.0, 0.0 );
+        vec2 grid = vec2(resolution.x, resolution.y );
+        cell.w = min(1.0/grid.x, 1.0/grid.y);
+        vec4 conf = config;
+        vec2 ipos = mouse;
+        vec4 icol = vec4(1.0);
+        float irad = cell.w;
+
+        // neighbourhood shortcuts
         vec4 V =  U(0.,0.);
-        vec4 V2 = U(0., 1.) + U(0.,-1.);
+        vec4 V1 =  U(0.,-1.);
+        vec4 V2 = U(0., 0.) + U(0.,-1.);
         vec4 V3 = U(-1., -1.) + U(0., -1.) + U(1., -1.);
         vec4 V4 = U(0., -1.) + U(0.,1.) + U(-1., 0.) + U(1.,0.);
         vec4 V5 = V + V4;
@@ -998,14 +1008,6 @@ function utomata(_wid, _hei)
         vec4 V7 = V + V6;
         vec4 V8 = V4 + U(-1., -1.) + U( 1., -1.) + U(-1., 1.) + U( 1., 1.);
         vec4 V9 = V + V8;
-        vec4 V10 = V8 + U(0., -2.) + U(0., 2.);
-        vec4 V11 = V10 + V;
-        vec4 V12 = V10 + U(-2., 0.) + U(2., 0.);
-        vec4 V13 = V12 + V;
-        vec4 V14 = V12 + U(0., -3.) + U(0., 3.);
-        vec4 V15 = V14 + V;
-        vec4 V16 = V14 + U(-3., 0.) + U(3., 0.);
-        vec4 V17 = V16 + V;
     `
 
     return res;
@@ -1022,22 +1024,22 @@ function utomata(_wid, _hei)
     //   V = mix(V, layer2, layer2.a * float(mouseDown));
     // }
 
-    float mouseDist = distance(mouse.xy * resolution, gl_FragCoord.xy);
-    if (useMouse == true && mouseDown == 1 && mouseDist <= mouseRadius + 0.5) {
-      V = mouseColor;
+    float mouseDist = distance(mouse.xy * grid.xy, gl_FragCoord.xy);
+    if (mouseDown == 1 && mouseDist <= irad + 0.5) {
+      V = icol;
     }
 
-    if(useAlpha == false){
-      V.a = 1.0;
-    }
+    // if(useAlpha == false){
+    //   V.a = 1.0;
+    // }
 
-    if(doConfig == 1){
-      V = config;
-    }
+
+    V = (doConfig * config) + ((1.0-doConfig) * V);
+
 
     V = clamp(V, 0.0, 1.0);
 
-    gl_FragColor = V;//vec4(V.rgb, 1.0);
+    gl_FragColor = vec4(V.rgb, 1.0);
     }
     `
     return res;

@@ -16,8 +16,10 @@ liorbengai 2020
 	- scroll event does not work and fix minimap
 	- examples page
 	- share link to this program
-
+	- use command +/- to zoom
 	- keeping program in url has formatting issues with special characters like +, < \n
+	- alert if unsaved when leaving
+
  -->
 
 <!DOCTYPE html>
@@ -669,8 +671,8 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 			    hidePanel();
 			  }
 
-				//CMD+A
-			  if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)  && e.keyCode == 65) {
+				//CMD+U
+			  if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)  && e.keyCode == 85) {
 					e.preventDefault();
 			    uto.config();
 			  }
@@ -681,8 +683,8 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 			    duplicatePage(true);
 			  }
 
-			  //CMD+U
-			  if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)  && e.keyCode == 85) {
+			  //CMD+A
+			  if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)  && e.keyCode == 65) {
 			    e.preventDefault();
 			    toggfullscreen();
 			  }
