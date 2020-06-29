@@ -29,8 +29,8 @@ BUGS:
 
 function utomata(_wid, _hei)
 {
-  var _this = this;
 
+  var _this = this;
   // all structure parameters
   var params = {
     width: _wid,
@@ -91,8 +91,8 @@ function utomata(_wid, _hei)
   init();
   animate();
 
-  // GO / STOP
 
+  // PUBLIC METHODS
 
   this.run = function(_transition){
 
@@ -104,15 +104,14 @@ function utomata(_wid, _hei)
     running = true;
 
     compile();
+    _this.config();
   }
 
   this.stop = function(_transition){
     running = false;
   }
 
-
   // SETTERS
-
   this.config = function(_conf){
 
     if(_conf !== undefined){
@@ -136,7 +135,6 @@ function utomata(_wid, _hei)
     uniforms[k] = v;
   }
 
-
   // TODO: USE IN PROGRAM
   this.edge = function(_edge){
     if( _edge == "REPEAT" ){
@@ -146,7 +144,6 @@ function utomata(_wid, _hei)
     }
     updateCanvasSize();
   }
-
 
   this.size = function(w, h){
 
@@ -167,21 +164,25 @@ function utomata(_wid, _hei)
     }
   }
 
-  this.zoom = function(newZ){
-    params.zoom = Math.round(newZ);
+  this.zoom = function(mag){
+    params.zoom = Math.round(mag);
     zoomCanvas();
   }
 
-  // GETTERS
+  this.seed = function(s){
+    params.randSeed = s;
+  }
 
+  // GETTERS
+  this.getVars = function(){
+    return uniforms[k];
+  }
   this.getFps = function(){
     return params.avgFps;
   }
-
   this.errors = function(){
     return errors;
   }
-
   this.getMouseX = function(){
     return params.mouseX;
   }
@@ -194,7 +195,10 @@ function utomata(_wid, _hei)
   this.getHeight = function(){
     return params.height;
   }
-
+  this.getParams = function(){
+    return params;
+  }
+  // PRIVATE METHODS
 
   function init() {
 
@@ -205,6 +209,10 @@ function utomata(_wid, _hei)
 
   	canvas = document.createElement( 'canvas' );
     canvas.id = "mainCanvas";
+    canvas.style.setProperty("image-rendering", "pixelated");
+    canvas.style.setProperty("image-rendering", "-moz-crisp-edges");
+    canvas.style.setProperty("image-rendering", "crisp-edges");
+    canvas.style.setProperty("cursor", "crosshair");
   	document.body.appendChild( canvas );
 
   	// Initialise WebGL
@@ -782,6 +790,9 @@ function utomata(_wid, _hei)
     float div(float a){return a;}
 
     // EXPONENTIATION
+    float pw(float a, float b){return pow(a, b);}
+    vec2 pw(vec2 a, vec2 b){return pow(a, b);}
+    vec3 pw(vec3 a, vec3 b){return pow(a, b);}
     vec4 pw(float a, vec4 b){return pow(vec4(a), b);}
     vec4 pw(vec4 a, float b){return pow(a, vec4(b));}
     vec4 pw(vec4 a){return a;}
@@ -881,6 +892,8 @@ function utomata(_wid, _hei)
     float mn(float a){return a;}
 
     // MAX
+    vec2 mx(vec2 a, vec2 b){return max(a,b);}
+    vec3 mx(vec3 a, vec3 b){return max(a,b);}
     vec4 mx(vec4 a, vec4 b){return max(a,b);}
     float mx(float a, float b){return max(a,b);}
     vec4 mx(float a, vec4 b){return max(vec4(a), b);}
@@ -889,6 +902,9 @@ function utomata(_wid, _hei)
     float mx(float a){return a;}
 
     //// DOT PRODUCT
+    float dt(float a, float b){return dot(a, b);}
+    float dt(vec2 a, vec2 b){return dot(a, b);}
+    float dt(vec3 a, vec3 b){return dot(a, b);}
     float dt(float a, vec4 b){return dot(vec4(a), b);}
     float dt(vec4 a, float b){return dot(a, vec4(b));}
     float dt(vec4 a){return a.x + a.y + a.z + a.w;}
@@ -916,16 +932,20 @@ function utomata(_wid, _hei)
     vec4 nrm(vec4 a, float b){return normalize(a);}
 
     // SINE
-    vec4 sn(vec4 a, vec4 b){return sin(a);}
-    float sn(float a, float b){return sin(a);}
+    float sn(float a){return sin(a);}
+    vec2 sn(vec2 a){return sin(a);}
+    vec3 sn(vec3 a){return sin(a);}
+    vec4 sn(vec4 a){return sin(a);}
     float sn(float a, vec4 b){return sin(a);}
     vec4 sn(vec4 a, float b){return sin(a);}
 
     // COSINE
-    vec4 cs(vec4 a, vec4 b){return cos(a);}
-    float cs(float a, float b){return cos(a);}
+    float cs(float a){return cos(a);}
+    vec2 cs(vec2 a){return cos(a);}
+    vec3 cs(vec3 a){return cos(a);}
+    vec4 cs(vec4 a){return cos(a);}
     float cs(float a, vec4 b){return cos(a);}
-    vec4 cs(vec4 a, float b){return sin(a);}
+    vec4 cs(vec4 a, float b){return cos(a);}
 
     // TANGENT
     vec4 tn(vec4 a, vec4 b){return tan(a);}
@@ -1058,7 +1078,6 @@ function utomata(_wid, _hei)
 
     return res;
   }
-
 
   return this;
 }// end utomata()
