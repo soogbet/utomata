@@ -104,7 +104,7 @@ function utomata(_wid, _hei)
     running = true;
 
     compile();
-    _this.config();
+    //_this.config();
   }
 
   this.stop = function(_transition){

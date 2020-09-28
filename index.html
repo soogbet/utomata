@@ -205,21 +205,22 @@ liorbengai 2020
 			      <div class="menuBtn">File</div>
 			      <ul class="dropdown-menu">
 			        <li class="dropdownItem" onclick="duplicatePage(true)">New</li>
-			        <li class="dropdownItem" onclick="duplicatePage(false)">Duplicate (cmd + d)</li>
+			        <li class="dropdownItem" onclick="duplicatePage(false)">Duplicate(cmd + D)</li>
 							<li class="dropdownItem" id="inputRestore">Restore last</li>
 			        <div class="menuSep"></div>
 			        <li class="dropdownItem disabled">Examples...</li>
 							<div class="menuSep"></div>
-			       <li  class="dropdownItem" id="inputSave">Save (HTML)</li>
-			        <li class="dropdownItem" onclick="saveImage('utomata', 'download')">Export (png)</li>
+							<li  class="dropdownItem" id="inputCopyLink">Copy link to program</li>
+			        <li  class="dropdownItem" id="inputSave">Save as HTML (cmd + S)</li>
+			        <li class="dropdownItem" onclick="saveImage('utomata', 'download')">Export as png</li>
 			      </ul>
 			  </div>
 
 			  <div>
 			      <div class="menuBtn">Set</div>
 			      <ul class="dropdown-menu">
-			        <li class="dropdownItem" id="inputConfig">Config (cmd + a)</li>
-			        <li class="dropdownItem" id="inputRun">Stop (cmd + b)</li>
+			        <li class="dropdownItem" id="inputConfig">Config (cmd + U)</li>
+			        <li class="dropdownItem" id="inputRun">Stop (cmd + B)</li>
 			        <div class="menuSep"></div>
 							<li class="dropdownItem disabled" id="inputNoImg" onClick="noConfigImage()">Remove input image</li>
 
@@ -234,8 +235,8 @@ liorbengai 2020
 			  <div>
 			      <div class="menuBtn">View</div>
 			      <ul class="dropdown-menu">
-			        <li class="dropdownItem" onclick="toggfullscreen()">Full screen (cmd + u)</li>
-			        <li class="dropdownItem" onclick="hidePanel()">Hide panel (cmd + h)</li>
+			        <li class="dropdownItem" onclick="toggfullscreen()">Full screen (cmd + A)</li>
+			        <li class="dropdownItem" onclick="hidePanel()">Hide panel (cmd + H)</li>
 			        <li class="dropdownItem">Font-size(<input size="2" type="text"  id="inputFont" value="14">)</li>
 			      </ul>
 			  </div>
@@ -469,7 +470,6 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 				restoreFromLocal();
 			});
 
-
 			function duplicatePage(fresh){
 				var win;
 				if(fresh){
@@ -528,8 +528,6 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 			});
 
 
-
-
 			function runPgm(val){
 
 				if(val == true){
@@ -586,6 +584,22 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 			  editor.resize();
 			});
 
+			document.getElementById("inputCopyLink").addEventListener('click', function(){
+				var _pgm = editor.getValue();
+
+				_pgm.replaceAll(' ', '%20');
+				_pgm.replaceAll('\n', '%A0');
+				_pgm.replaceAll('\n', '%09');
+				_pgm.replaceAll('+', '%2B');
+
+				var url = "https://soogbet.github.io/utomata/?wid="+wid+"&hei="+hei+"&zoom="+zoom+"&fps="+fps+"&pgm=" + _pgm;
+				const el = document.createElement('textarea');
+			  el.value = url;
+			  document.body.appendChild(el);
+			  el.select();
+			  document.execCommand('copy');
+			  document.body.removeChild(el);
+			});
 
 			document.getElementById("inputSave").addEventListener('click', function(){
 				saveHTML();
