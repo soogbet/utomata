@@ -584,13 +584,22 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 			  editor.resize();
 			});
 
+
+
+
 			document.getElementById("inputCopyLink").addEventListener('click', function(){
 				var _pgm = editor.getValue();
 
-				_pgm.replaceAll(' ', '%20');
-				_pgm.replaceAll('\n', '%A0');
-				_pgm.replaceAll('\n', '%09');
-				_pgm.replaceAll('+', '%2B');
+				_pgm = _pgm.replace(/(\r\n|\n|\r)/gm,'%0A');
+				_pgm = _pgm.replace(/\t/gm,'%09');
+
+				_pgm = _pgm.replaceAll('+', '%2B');
+				//_pgm = _pgm.replaceAll(' ', '%20');
+				// _pgm = _pgm.replaceAll('-', '%2D');
+				// _pgm = _pgm.replaceAll('*', '%2A');
+				// _pgm = _pgm.replaceAll('/', '%2F');
+				// _pgm = _pgm.replaceAll('%', '%25');
+
 
 				var url = "https://soogbet.github.io/utomata/?wid="+wid+"&hei="+hei+"&zoom="+zoom+"&fps="+fps+"&pgm=" + _pgm;
 				const el = document.createElement('textarea');
