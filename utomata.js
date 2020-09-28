@@ -982,11 +982,12 @@ function utomata(_wid, _hei)
       return fract(sin(dot(st.xy, vec2(randSeed*12.9898,78.233)))* 43758.5453123);
     }
 
-    // GET A NEIGHBOUR RELATIVE TO SELF
+    // GET A CELL VALUE (ABSOLUTE COORD)
     vec4 ask(float _x, float _y){
       return texture2D( backbuffer, vec2(_x, _y) );
     }
 
+    // GET A NEIGHBOUR RELATIVE TO SELF
     vec4 U(float _x){
       return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(_x, 0.0)));
     }
