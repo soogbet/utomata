@@ -11,7 +11,9 @@
 
 /*
 
+
 TODO:
+- toroidal bounds
 - implement better incapsulation
 - allow input-output between two instances of utomata
 - function versions that handle vec2, vec3 types as well
@@ -22,6 +24,7 @@ TODO:
   - using config = I;
 - add step uniform
 - How about adding a T(d) function that returns the sum of neighbours within d distance from uv ?
+
 
 BUGS:
 - REPEAT doesn't work

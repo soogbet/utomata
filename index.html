@@ -7,7 +7,6 @@ An online editor for utomata programs
 liorbengai 2020
 
 	TODO:
-	- tidy up code
 	- color code all utomata keywords
 	- highlight error line
 	- add watermark link to utomata file exports
@@ -19,7 +18,7 @@ liorbengai 2020
 	- use command +/- to zoom
 	- keeping program in url has formatting issues with special characters like +, < \n
 	- alert if unsaved when leaving
-
+	- toroidal bounds
  -->
 
 <!DOCTYPE html>
@@ -317,7 +316,7 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 	  editor.setOption("highlightActiveLine", false);
 	  editor.setOption("highlightSelectedWord", true);
 	  editor.setOption("cursorStyle", "wide");
-	  editor.setOption("useSoftTabs", true);
+	  editor.setOption("useSoftTabs", false);
 	  editor.setOption("tabSize", 3);
 	  editor.setOption("fontSize", 14);
 	  editor.setAutoScrollEditorIntoView(true);
@@ -590,15 +589,16 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 			document.getElementById("inputCopyLink").addEventListener('click', function(){
 				var _pgm = editor.getValue();
 
-				_pgm = _pgm.replace(/(\r\n|\n|\r)/gm,'%0A');
+				_pgm = _pgm.replaceAll('%', '%25');
 				_pgm = _pgm.replace(/\t/gm,'%09');
-
+				_pgm = _pgm.replace(/(\r\n|\n|\r)/gm,'%0A');
 				_pgm = _pgm.replaceAll('+', '%2B');
-				//_pgm = _pgm.replaceAll(' ', '%20');
+				_pgm = _pgm.replaceAll(" ", '%20');
+
 				// _pgm = _pgm.replaceAll('-', '%2D');
 				// _pgm = _pgm.replaceAll('*', '%2A');
 				// _pgm = _pgm.replaceAll('/', '%2F');
-				// _pgm = _pgm.replaceAll('%', '%25');
+
 
 
 				var url = "https://soogbet.github.io/utomata/?wid="+wid+"&hei="+hei+"&zoom="+zoom+"&fps="+fps+"&pgm=" + _pgm;
@@ -702,7 +702,7 @@ V= add(eql(3, V9), mlt(eql(4, V9), V));
 				//CMD+D
 			  if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)  && e.keyCode == 68) {
 			    e.preventDefault();
-			    duplicatePage(true);
+			    duplicatePage(false);
 			  }
 
 			  //CMD+A
