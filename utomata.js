@@ -66,7 +66,8 @@ function utomata(_wid, _hei)
   var frontTarget, backTarget, screenProgram;
 
   var errors = [];
-
+  var stepCounter = undefined;
+  var infoText = undefined;
   var running = true;
   var fpsInterval = 1000/params.fps;
 
@@ -76,6 +77,9 @@ function utomata(_wid, _hei)
   var now, elapsed;
   // var event = new Event('build');
   var updateEvent = new Event("utomataUpdate");
+
+  var isInitialized = false;
+  var parentDiv;
 
 
   if ( !window.requestAnimationFrame ) {
@@ -107,7 +111,6 @@ function utomata(_wid, _hei)
     running = true;
 
     compile();
-    //_this.config();
   }
 
   this.stop = function(_transition){
@@ -129,6 +132,14 @@ function utomata(_wid, _hei)
     params.step = 0;
   }
 
+  this.setup = function(_setup){
+    params.config = _setup;
+  }
+
+  this.update = function(_update){
+    params.transition = _update;
+  }
+
   this.fps = function(_fps){
     params.fps = _fps;
     fpsInterval = 1000/params.fps;
@@ -148,13 +159,20 @@ function utomata(_wid, _hei)
     updateCanvasSize();
   }
 
-  this.size = function(w, h){
-
-    params.width =parseInt(w);
-    params.height =parseInt(h);
-
+  this.width = function(w){
+    params.width = parseInt(w);
     updateCanvasSize();
-    zoomCanvas();
+  }
+
+  this.height = function(h){
+    params.height = parseInt(h);
+    updateCanvasSize();
+  }
+
+  this.size = function(w, h){
+    params.width = parseInt(w);
+    params.height =parseInt(h);
+    updateCanvasSize();
   }
 
   this.input = function(img){
@@ -201,7 +219,29 @@ function utomata(_wid, _hei)
   this.getParams = function(){
     return params;
   }
+
+  this.setParent = function(parent){
+    parentDiv = parent;
+    parentDiv.appendChild(canvas);
+  }
+
+  this.step = function(){
+    render();
+  }
+
+  this.setExternalStepCounter = function(elem){
+    stepCounter = elem;
+  };
+
+  this.setExternalInfoText = function(elem){
+    infoText = elem;
+  };
+
+
+
   // PRIVATE METHODS
+
+
 
   function init() {
 
@@ -216,7 +256,8 @@ function utomata(_wid, _hei)
     canvas.style.setProperty("image-rendering", "-moz-crisp-edges");
     canvas.style.setProperty("image-rendering", "crisp-edges");
     canvas.style.setProperty("cursor", "crosshair");
-  	document.body.appendChild( canvas );
+    document.body.appendChild( canvas );
+
 
   	// Initialise WebGL
   	try {
@@ -274,6 +315,7 @@ function utomata(_wid, _hei)
     compile();
   	compileScreenProgram();
 
+    isInitialized = true;
   }
 
   function decimal(n, d){
@@ -284,7 +326,7 @@ function utomata(_wid, _hei)
 
   function compile() {
 
-    console.log("compiling: " + params.transition);
+    //console.log("compiling: " + params.transition);
 
     var program = gl.createProgram();
 
@@ -318,7 +360,6 @@ function utomata(_wid, _hei)
     cacheUniformLocation( program, 'backbuffer' );
     cacheUniformLocation( program, 'doConfig' );
     cacheUniformLocation( program, 'randSeed' );
-    // cacheUniformLocation( program, 'timeStep' );
 
     for(var i = 0 ; i < Object.keys(uniforms).length; i++){
       cacheUniformLocation( program, Object.keys(uniforms)[i] );
@@ -391,8 +432,6 @@ function utomata(_wid, _hei)
     if(params.edge == "REPEAT" && isPowTwoSize()){
       gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.REPEAT );
       gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.REPEAT );
-
-
     }else {
       gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE );
       gl.texParameteri( gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE );
@@ -488,18 +527,8 @@ function utomata(_wid, _hei)
   }
 
   function isPowTwoSize(){
-
-    var x = params.width;
-    while (((x % 2) == 0) && x > 1){
-      x /= 2;
-    } /* While x is even and > 1 */
-
-    var y = params.height;
-    while (((y % 2) == 0) && x > 1){
-      y /= 2;
-    } /* While x is even and > 1 */
-    return ( (x == 1) && (y == 1) );
-
+    var res = (((params.width & (params.width - 1)) == 0) && ((params.width & (params.width - 1)) == 0));
+    return res;
   }
 
 
@@ -579,6 +608,7 @@ function utomata(_wid, _hei)
     gl.viewport( 0, 0, canvas.width, canvas.height );
     createRenderTargets();
     params.step = 0;
+    params.doConfig = 1;
   }
 
   function zoomCanvas(){
@@ -599,9 +629,6 @@ function utomata(_wid, _hei)
       //params.avgFps += decimal((actualFPS - params.avgFps) / 10 ,0);
       params.avgFps = actualFPS;
       render();
-      params.step += 1;
-      //console.log(this);
-
     }
   }
 
@@ -663,7 +690,22 @@ function utomata(_wid, _hei)
 
     // config can only happen once
     params.doConfig = 0;
-    //dispatchEvent(updateEvent);
+
+    if(stepCounter !== undefined){
+      stepCounter.innerHTML = params.step;
+    }
+    if(infoText !== undefined){
+      if(running){
+        var x = Math.round(params.mouseX * 10000)/10000 ;
+        var y = Math.round(params.mouseY * 10000)/10000 ;
+        infoText.innerHTML = "Running at: " + params.avgFps+ " fps | mouse: ("+ x +", "+y  +")";
+      }else{
+        infoText.innerHTML = "Paused";
+      }
+
+    }
+
+    params.step += 1;
   }
 
   function htmlEncode(str){
@@ -689,11 +731,17 @@ function utomata(_wid, _hei)
     pgm = pgm.replace(/tan\s*\(/g, "tn(");
 
     if(params.useCastInt){
-      var integerRegex = new RegExp( /(\b(?<!\.)\d+(?!\.)\b)/g );
+
+      var integerRegex = new RegExp( /(\b(?<![.])[0-9]+(?![.])\b)/g );
       pgm = pgm.replace(integerRegex, '$1.0');
     }
 
-    console.log(pgm);
+    var updateRegex = new RegExp( /update\s*=/ );
+
+    if(pgm.search(updateRegex) == -1){
+      pgm = "update=" + pgm;
+    }
+    //console.log(pgm);
     return pgm;
   }
 
@@ -979,14 +1027,24 @@ function utomata(_wid, _hei)
     vec4 vec( float a, float b, float c){return vec4(a, b, c, 1.0);}
     vec4 vec( float a, float b, float c, float d){return vec4(a, b, c, d);}
 
+    const float PHI = 1.61803398874989484820459; // Φ = Golden Ratio
+
     // RETURN A PSEUDO RANDOM NUMBER [0.0 - 1.0]
+    float rdm(float _seed) {
+      vec2 st = gl_FragCoord.xy / resolution.xy;
+      return fract(sin(dot(st.xy, vec2(randSeed*12.9898,_seed*78.233)))* 43758.5453123);
+    }
     float rdm() {
       vec2 st = gl_FragCoord.xy / resolution.xy;
       return fract(sin(dot(st.xy, vec2(randSeed*12.9898,78.233)))* 43758.5453123);
     }
 
+
+
+
+
     // GET A CELL VALUE (ABSOLUTE COORD)
-    vec4 ask(float _x, float _y){
+    vec4 get(float _x, float _y){
       return texture2D( backbuffer, vec2(_x, _y) );
     }
 
@@ -1011,14 +1069,12 @@ function utomata(_wid, _hei)
         float aspectRatio = resolution.x/resolution.y;
 
         // new name conventions
-        bool useAlpha = false;
-        vec4 cell = vec4( uv.x, uv.y, 0.0, 0.0 );
-        vec2 grid = vec2(resolution.x, resolution.y );
-        vec4  conf = `+ params.config+`;
-        cell.w = max(1.0/grid.x, 1.0/grid.y);
-        vec2 ipos = mouse;
-        vec4 icol = vec4(1.0);
-        float irad = 1.0;
+        bool alpha = false;
+        vec2 grid = vec2(resolution.x, resolution.y);
+        vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
+
+        vec2 cursor = mouse;
+        vec4 pen = vec4(1.0);
 
         // neighbourhood shortcuts
         vec4 V =  U(0.,0.);
@@ -1031,6 +1087,9 @@ function utomata(_wid, _hei)
         vec4 V7 = V + V6;
         vec4 V8 = V4 + U(-1., -1.) + U( 1., -1.) + U(-1., 1.) + U( 1., 1.);
         vec4 V9 = V + V8;
+
+        vec4  setup = `+ params.config+`;
+        vec4 update = V;
     `
 
     return res;
@@ -1040,16 +1099,16 @@ function utomata(_wid, _hei)
   function getUtoFragB(){
 
     var res = `;
-    float mouseDist = distance(ipos.xy * grid.xy , gl_FragCoord.xy);
-    if (mouseDown == 1 && mouseDist <= (irad) + 0.5) {
-      V = icol;
+    float mouseDist = distance(cursor.xy * grid.xy , gl_FragCoord.xy);
+    if (mouseDown == 1 && mouseDist <= (pen.w) + 0.5) {
+      update = pen;
     }
-    if(useAlpha == false){
-      V.a = 1.0;
+    if(alpha == false){
+      update.a = 1.0;
     }
-    V = (doConfig * conf) + ((1.0-doConfig) * V);
-    V = clamp(V, 0.0, 1.0);
-    gl_FragColor = V;
+    update = (doConfig * setup) + ((1.0-doConfig) * update);
+    update = clamp(update, 0.0, 1.0);
+    gl_FragColor = update;
     }
     `
     return res;
