@@ -4,7 +4,7 @@
 
 ## Main Features:
 * Parallel: all calculations are done on the graphics card, allowing fast implementation of large systems
-* light wight, dependency free and easy to embed in any web page.
+* light weight, dependency free and easy to embed in any web page.
 * Interactive, hackable and live coded.
 * Input/output allows chaining systems together for advanced applications.
 * Variable neighbourhoods: can use anything from no - to all neighbours (or any mix)
