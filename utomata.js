@@ -30,7 +30,7 @@ BUGS:
 - REPEAT doesn't work
 */
 
-function utomata(_wid, _hei)
+function utomata(_wid, _hei, _canvasId)
 {
 
   var _this = this;
@@ -51,11 +51,15 @@ function utomata(_wid, _hei)
     mouseOver: 0,
     mouseX: 0,
     mouseY: 0,
+    pMouseX: 0,
+    pMouseY: 0,
     randSeed: 123.01234,
     useCastInt: true,
     input: undefined,
     useInput: false,
-    avgFps: 60
+    avgFps: 60,
+    stepLimit: -1,
+    completionCallback: undefined
   }
 
   // an array of key value pairs to use as uniforms for the shader
@@ -75,11 +79,15 @@ function utomata(_wid, _hei)
   var then = Date.now();
   var startTime = then;
   var now, elapsed;
-  // var event = new Event('build');
-  var updateEvent = new Event("utomataUpdate");
 
   var isInitialized = false;
-  var parentDiv;
+  var parentDiv = undefined;
+
+  var canvasId = "mainCanvas";
+  if(_canvasId !== undefined){
+    canvasId = _canvasId;
+  }
+
 
 
   if ( !window.requestAnimationFrame ) {
@@ -112,6 +120,7 @@ function utomata(_wid, _hei)
 
     compile();
   }
+
 
   this.stop = function(_transition){
     running = false;
@@ -186,7 +195,8 @@ function utomata(_wid, _hei)
   }
 
   this.zoom = function(mag){
-    params.zoom = Math.round(mag);
+    params.zoom = Math.max( 0.01 , mag);
+    params.zoom = Math.min(128, params.zoom);
     zoomCanvas();
   }
 
@@ -195,6 +205,14 @@ function utomata(_wid, _hei)
   }
 
   // GETTERS
+  this.getStatus = function(){
+    if(running){
+      return "running, current step: " + params.step;
+    }else{
+      return "paused, current step: " + params.step;
+    }
+  }
+
   this.getVars = function(){
     return uniforms[k];
   }
@@ -220,6 +238,10 @@ function utomata(_wid, _hei)
     return params;
   }
 
+  this.getTransition = function(){
+    return params.transition;
+  }
+
   this.setParent = function(parent){
     parentDiv = parent;
     parentDiv.appendChild(canvas);
@@ -227,6 +249,13 @@ function utomata(_wid, _hei)
 
   this.step = function(){
     render();
+  }
+
+  this.setCanvasId = function(id){
+    canvasId = id;
+  }
+  this.getCanvasId = function(){
+    return canvasId;
   }
 
   this.setExternalStepCounter = function(elem){
@@ -237,7 +266,18 @@ function utomata(_wid, _hei)
     infoText = elem;
   };
 
+  this.setStepLimit = function(_step, _callback = null){
 
+    if(_step < 1){
+        params.stepLimit = _step;
+    }else{
+        params.stepLimit = _step;
+    }
+    if(_callback !== null){
+
+      params.completionCallback = _callback;
+    }
+  }
 
   // PRIVATE METHODS
 
@@ -251,12 +291,18 @@ function utomata(_wid, _hei)
   	// document.body.appendChild( container );
 
   	canvas = document.createElement( 'canvas' );
-    canvas.id = "mainCanvas";
+    canvas.id = canvasId;
     canvas.style.setProperty("image-rendering", "pixelated");
     canvas.style.setProperty("image-rendering", "-moz-crisp-edges");
     canvas.style.setProperty("image-rendering", "crisp-edges");
     canvas.style.setProperty("cursor", "crosshair");
-    document.body.appendChild( canvas );
+
+    if(parentDiv == undefined){
+        document.body.appendChild( canvas );
+    }else{
+        parentDiv.appendChild( canvas );
+    }
+
 
 
   	// Initialise WebGL
@@ -355,6 +401,7 @@ function utomata(_wid, _hei)
     // Cache uniforms
     cacheUniformLocation( program, 'time' );
     cacheUniformLocation( program, 'mouse' );
+    cacheUniformLocation( program, 'pmouse' );
     cacheUniformLocation( program, 'mouseDown' );
     cacheUniformLocation( program, 'resolution' );
     cacheUniformLocation( program, 'backbuffer' );
@@ -620,6 +667,7 @@ function utomata(_wid, _hei)
   function animate() {
     requestAnimationFrame( animate );
 
+
     now = Date.now();
     elapsed = now - then;
 
@@ -628,8 +676,19 @@ function utomata(_wid, _hei)
       var actualFPS = decimal(1/(elapsed/1000),0);
       //params.avgFps += decimal((actualFPS - params.avgFps) / 10 ,0);
       params.avgFps = actualFPS;
+
       render();
+
+      if(params.stepLimit != -1 && params.step > params.stepLimit){
+        running = false;
+        if(params.completionCallback){
+          params.completionCallback();
+        }
+      }
     }
+
+    params.pMouseX = params.mouseX;
+    params.pMouseY = params.mouseY;
   }
 
   function render() {
@@ -644,6 +703,7 @@ function utomata(_wid, _hei)
 
     gl.uniform1f( currentProgram.uniformsCache[ 'time' ], params.step );
     gl.uniform2f( currentProgram.uniformsCache[ 'mouse' ], params.mouseX, params.mouseY );
+    gl.uniform2f( currentProgram.uniformsCache[ 'pmouse' ], params.pMouseX, params.pMouseY );
     gl.uniform2f( currentProgram.uniformsCache[ 'resolution' ], params.width, params.height );
     gl.uniform1i( currentProgram.uniformsCache[ 'backbuffer' ], 0 );
     gl.uniform1f( currentProgram.uniformsCache[ 'doConfig' ], params.doConfig );
@@ -730,18 +790,25 @@ function utomata(_wid, _hei)
     pgm = pgm.replace(/cos\s*\(/g, "cs(");
     pgm = pgm.replace(/tan\s*\(/g, "tn(");
 
-    if(params.useCastInt){
 
-      var integerRegex = new RegExp( /(\b(?<![.])[0-9]+(?![.])\b)/g );
-      pgm = pgm.replace(integerRegex, '$1.0');
+
+    if(params.useCastInt){
+      //var integerRegex = new RegExp( /(\b(?<![.])[0-9]+(?![.])\b)/g ); // not working on safari
+      //var integerRegex = new RegExp( /^[-+]?\d+$/gm);
+      var integerRegex = new RegExp( /(^|\s|\(|\)|\,|\;)([0-9]+)(\s|\(|\)|\,|\;|$)/gm);
+      // var testRegex = /(\,|^|\s|\()(\d+)(\s|\,|\)|$)/g ; // use with $2.0
+      pgm = pgm.replace(integerRegex, '$1$2.0$3');
+
     }
+    // console.log("program: " + pgm);
+
 
     var updateRegex = new RegExp( /update\s*=/ );
 
     if(pgm.search(updateRegex) == -1){
       pgm = "update=" + pgm;
     }
-    //console.log(pgm);
+
     return pgm;
   }
 
@@ -792,6 +859,7 @@ function utomata(_wid, _hei)
 
     uniform float time;
     uniform vec2 mouse;
+    uniform vec2 pmouse;
     uniform vec2 resolution;
     uniform sampler2D backbuffer;
 
@@ -825,8 +893,10 @@ function utomata(_wid, _hei)
     float mlt(float a){return a;}
 
     // SUBTRACTION
-    vec4 sub(vec4 a, vec4 b){return a - b;}
     float sub(float a, float b){return a - b;}
+    vec2 sub(vec2 a, vec2 b){return a - b;}
+    vec3 sub(vec3 a, vec3 b){return a - b;}
+    vec4 sub(vec4 a, vec4 b){return a - b;}
     vec4 sub(float a, vec4 b){return vec4(a) - b;}
     vec4 sub(vec4 a, float b){return a - vec4(b);}
     vec4 sub(vec4 a){return -a;}
@@ -843,7 +913,9 @@ function utomata(_wid, _hei)
     // EXPONENTIATION
     float pw(float a, float b){return pow(a, b);}
     vec2 pw(vec2 a, vec2 b){return pow(a, b);}
+    vec2 pw(vec2 a, float b){return pow(a, vec2(b));}
     vec3 pw(vec3 a, vec3 b){return pow(a, b);}
+    vec4 pw(vec4 a, vec4 b){return pow(a, b);}
     vec4 pw(float a, vec4 b){return pow(vec4(a), b);}
     vec4 pw(vec4 a, float b){return pow(a, vec4(b));}
     vec4 pw(vec4 a){return a;}
@@ -928,6 +1000,10 @@ function utomata(_wid, _hei)
 
     // MODULO
     float md(float a, float b){return mod(a, b);}
+    vec2 md(vec2 a, vec2 b){return mod(a, b);}
+    vec2 md(vec2 a, float b){return mod(a, b);}
+    vec3 md(vec3 a, vec3 b){return mod(a, b);}
+    vec3 md(vec3 a, float b){return mod(a, b);}
     vec4 md(float a, vec4 b){return mod(vec4(a), b);}
     vec4 md(vec4 a, vec4 b){return mod(a, b);}
     vec4 md(vec4 a, float b){return mod(a, vec4(b));}
@@ -1030,23 +1106,62 @@ function utomata(_wid, _hei)
     const float PHI = 1.61803398874989484820459; // Φ = Golden Ratio
 
     // RETURN A PSEUDO RANDOM NUMBER [0.0 - 1.0]
-    float rdm(float _seed) {
+    float random(float _seed) {
       vec2 st = gl_FragCoord.xy / resolution.xy;
       return fract(sin(dot(st.xy, vec2(randSeed*12.9898,_seed*78.233)))* 43758.5453123);
     }
-    float rdm() {
+    // auto seed
+    float random() {
       vec2 st = gl_FragCoord.xy / resolution.xy;
       return fract(sin(dot(st.xy, vec2(randSeed*12.9898,78.233)))* 43758.5453123);
     }
+    // vec4
+    vec4 random(float _seedA,float _seedB, float _seedC, float _seedD ) {
+      return vec4(random(_seedA),random(_seedB),random(_seedC),random(_seedD));
+    }
+    // vec4 with alpha 1
+    vec4 random(float _seedA,float _seedB, float _seedC ) {
+      return vec4(random(_seedA),random(_seedB),random(_seedC),1.0);
+    }
 
+    // 2D Random
+    float random_det(in vec2 st) {
+        return fract(sin(dot(st.xy,
+                             vec2(12.9898,78.233)))
+                     * 43758.5453123);
+    }
 
+    // 2D Noise based on Morgan McGuire @morgan3d
+    // https://www.shadertoy.com/view/4dS3Wd
+    float noise(in vec2 st) {
+        vec2 i = floor(st);
+        vec2 f = fract(st);
+
+        // Four corners in 2D of a tile
+        float a = random_det(i);
+        float b = random_det(i + vec2(1.0, 0.0));
+        float c = random_det(i + vec2(0.0, 1.0));
+        float d = random_det(i + vec2(1.0, 1.0));
+
+        // Smooth Interpolation
+
+        // Cubic Hermine Curve.  Same as SmoothStep()
+        vec2 u = f*f*(3.0-2.0*f);
+        // u = smoothstep(0.,1.,f);
+
+        // Mix 4 coorners percentages
+        return mix(a, b, u.x) +
+                (c - a)* u.y * (1.0 - u.x) +
+                (d - b) * u.x * u.y;
+    }
 
 
 
     // GET A CELL VALUE (ABSOLUTE COORD)
-    vec4 get(float _x, float _y){
+    vec4 val(float _x, float _y){
       return texture2D( backbuffer, vec2(_x, _y) );
     }
+
 
     // GET A NEIGHBOUR RELATIVE TO SELF
     vec4 U(float _x){
@@ -1056,6 +1171,12 @@ function utomata(_wid, _hei)
       return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(_x, _y)));
     }
     vec4 U(vec2 p){
+      return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(p.x, p.y)));
+    }
+    vec4 U(vec3 p){
+      return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(p.x, p.y)));
+    }
+    vec4 U(vec4 p){
       return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(p.x, p.y)));
     }
 
@@ -1073,7 +1194,7 @@ function utomata(_wid, _hei)
         vec2 grid = vec2(resolution.x, resolution.y);
         vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
 
-        vec2 cursor = mouse;
+        vec4 cursor = vec4(mouse.x , mouse.y, pmouse.x, pmouse.y);
         vec4 pen = vec4(1.0);
 
         // neighbourhood shortcuts
@@ -1098,7 +1219,8 @@ function utomata(_wid, _hei)
 
   function getUtoFragB(){
 
-    var res = `;
+    var res = `
+    ;
     float mouseDist = distance(cursor.xy * grid.xy , gl_FragCoord.xy);
     if (mouseDown == 1 && mouseDist <= (pen.w) + 0.5) {
       update = pen;

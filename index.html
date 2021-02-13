@@ -262,15 +262,13 @@ liorbengai 2020
 <div class="ace-container">
 
 
-		<textarea spellcheck="false" id="utoPgm">
-// reset to rounded random initial state: 10% white
-conf = vec( stp(rdm(), 0.1) );
-
-// change mouse radius to 10 cells
-irad = 10;
-
+<textarea spellcheck="false" id="utoPgm">
+// configure to random binary: 10% white
+setup = vec( stp(random(), 0.1) );
+// use larger cursor pen
+pen.w = 10;
 // run Conway's game of life
-V= add(eql(3, V9), mlt(eql(4, V9), V));
+update = add(eql(3, V9), mlt(eql(4, V9), V));
 </textarea>
 		</div>
 

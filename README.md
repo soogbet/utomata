@@ -26,18 +26,22 @@
    <body></body>
    <script src="utomata.js"></script>
 
-   <script id="pgm">
+   <pre id="pgm" style="display:none;">
      // configure to random binary: 10% white
-     conf = vec( stp(rdm(), 0.1) );
+     setup = vec( stp(random(), 0.1) );
+     // use a 10px wide pen
+     pen.w = 10;
      // run Conway's game of life
-     V = add(eql(3, V9), mlt(eql(4, V9), V));
-   </script>
+     update = add(eql(3, V9), mlt(eql(4, V9), V));
+   </pre>
 
    <script>
       // create a system with one million cells
       var uto = utomata(1024, 1024);
       // run a transition function
       uto.run(document.getElementById("pgm").textContent);
+      // set to initial state
+      uto.config();
    </script>
 </html>
 ```
