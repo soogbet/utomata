@@ -15,13 +15,14 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 </textarea>
 
    <script>
-   var uto = new utomata(512, 512);
+   var uto = new utomata(512, 256);
    uto.setParent(document.getElementById("canvasContainer"));
    run();
 
    function run(){
-     uto.config();
+     uto.setup();
      uto.run(document.getElementById("pgm").value);
+     console.log(uto.errors());
    }
 
    </script>

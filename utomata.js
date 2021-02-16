@@ -59,7 +59,8 @@ function utomata(_wid, _hei, _canvasId)
     useInput: false,
     avgFps: 60,
     stepLimit: -1,
-    completionCallback: undefined
+    completionCallback: undefined,
+    functions: ""
   }
 
   // an array of key value pairs to use as uniforms for the shader
@@ -121,16 +122,19 @@ function utomata(_wid, _hei, _canvasId)
     compile();
   }
 
+  this.step = function(){
+    render();
+  }
 
   this.stop = function(_transition){
     running = false;
   }
 
   // SETTERS
-  this.config = function(_conf){
+  this.setup = function(_conf){
 
     if(_conf !== undefined){
-      params.config = _conf;
+      params.config = processPgm(_conf);
     }
 
     if(params.useInput){
@@ -141,13 +145,23 @@ function utomata(_wid, _hei, _canvasId)
     params.step = 0;
   }
 
-  this.setup = function(_setup){
-    params.config = _setup;
+  this.update = function(_update){
+    params.transition = processPgm(_update);
   }
 
-  this.update = function(_update){
-    params.transition = _update;
+  this.setStepLimit = function(_step, _callback = null){
+
+    if(_step < 1){
+        params.stepLimit = _step;
+    }else{
+        params.stepLimit = _step;
+    }
+    if(_callback !== null){
+
+      params.completionCallback = _callback;
+    }
   }
+
 
   this.fps = function(_fps){
     params.fps = _fps;
@@ -156,6 +170,10 @@ function utomata(_wid, _hei, _canvasId)
 
   this.setUniform = function(k, v){
     uniforms[k] = v;
+  }
+
+  this.setFunctions = function(functionsStr){
+    params.functions = functionsStr;
   }
 
   // TODO: USE IN PROGRAM
@@ -222,10 +240,10 @@ function utomata(_wid, _hei, _canvasId)
   this.errors = function(){
     return errors;
   }
-  this.getMouseX = function(){
+  this.getCursorX = function(){
     return params.mouseX;
   }
-  this.getMouseY = function(){
+  this.getCursorY = function(){
     return params.mouseY;
   }
   this.getWidth = function(){
@@ -238,8 +256,12 @@ function utomata(_wid, _hei, _canvasId)
     return params;
   }
 
-  this.getTransition = function(){
+  this.getUpdate = function(){
     return params.transition;
+  }
+
+  this.getSetup = function(){
+    return params.config;
   }
 
   this.setParent = function(parent){
@@ -247,9 +269,7 @@ function utomata(_wid, _hei, _canvasId)
     parentDiv.appendChild(canvas);
   }
 
-  this.step = function(){
-    render();
-  }
+
 
   this.setCanvasId = function(id){
     canvasId = id;
@@ -266,18 +286,7 @@ function utomata(_wid, _hei, _canvasId)
     infoText = elem;
   };
 
-  this.setStepLimit = function(_step, _callback = null){
 
-    if(_step < 1){
-        params.stepLimit = _step;
-    }else{
-        params.stepLimit = _step;
-    }
-    if(_callback !== null){
-
-      params.completionCallback = _callback;
-    }
-  }
 
   // PRIVATE METHODS
 
@@ -1180,7 +1189,9 @@ function utomata(_wid, _hei, _canvasId)
       return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(p.x, p.y)));
     }
 
-    `
+    `;
+
+    res += params.functions;
 
     res += `
     void main()
@@ -1211,7 +1222,7 @@ function utomata(_wid, _hei, _canvasId)
 
         vec4  setup = `+ params.config+`;
         vec4 update = V;
-    `
+    `;
 
     return res;
 
