@@ -568,7 +568,15 @@ vec(a, b, c, d) >> vec4(a, b, c, d); -->
 
 ### Binary operators <a name="binary"></a>
 
+Utomata is designed to work as a functional programming paradigm. At its core are a set op numerical operators that operate on floating point numbers and 2,3 and 4D vectors interchangeably. For unary operators this is trivial, as the operator's return value always matches its parameter. However, for binary operators the return value works as follows:
+
+* If 
+* The dimension of the return value always matches the first of its two parameters.
+
 #### add(a, b)
+
+Add two values and return the result as a 4D vector.
+
 #### sub(a, b)
 #### mlt(a, b)
 #### div(a, b)

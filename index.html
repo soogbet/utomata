@@ -1,9 +1,9 @@
 <!--
 ////////////////////////////////////
-// UTOMATA IDE
+// UTOMATA MIN IDE
 //////////////////////////////////
 
-An online editor for utomata programs
+A minimal editor for utomata programs
 liorbengai 2020
 
 	TODO:
@@ -12,13 +12,9 @@ liorbengai 2020
 	- add watermark link to utomata file exports
 	- window - opt to make exports standalone - look into embeding the minified library in each exported file
 	- window - opt to save file with current image as config (base64?)
-	- scroll event does not work and fix minimap
-	- examples page
 	- share link to this program
 	- use command +/- to zoom
 	- keeping program in url has formatting issues with special characters like +, < \n
-	- alert if unsaved when leaving
-	- toroidal bounds
  -->
 
 <!DOCTYPE html>
@@ -218,7 +214,7 @@ liorbengai 2020
 			  <div>
 			      <div class="menuBtn">Set</div>
 			      <ul class="dropdown-menu">
-			        <li class="dropdownItem" id="inputConfig">Config (cmd + U)</li>
+			        <li class="dropdownItem" id="inputConfig">Setup(cmd + U)</li>
 			        <li class="dropdownItem" id="inputRun">Stop (cmd + B)</li>
 			        <div class="menuSep"></div>
 							<li class="dropdownItem disabled" id="inputNoImg" onClick="noConfigImage()">Remove input image</li>
@@ -243,9 +239,10 @@ liorbengai 2020
 			    <div>
 			      <div class="menuBtn">Help</div>
 			      <ul class="dropdown-menu">
-			        <a href="https://github.com/soogbet/utomata/wiki/Programming-guide" target="_blank"><li class="dropdownItem">Programming guide...</li></a>
-			        <a href="https://github.com/soogbet/utomata/wiki/Language-reference" target="_blank"><li class="dropdownItem">Language reference...</li></a>
-			        <a href="location.href='https://github.com/soogbet/utomata" target="_blank"><li class="dropdownItem">Source...</li></a>
+			        <a href="https://github.com/soogbet/utomata" target="_blank"><li class="dropdownItem">Programming guide</li></a>
+			        <a href="https://github.com/soogbet/utomata/blob/master/utomata.js" target="_blank"><li class="dropdownItem">Source</li></a>
+							<a href="https://utomata.net" target="_blank"><li class="dropdownItem">utomata.net</li></a>
+							<a href="http://labofbabel.org" target="_blank"><li class="dropdownItem">labofbabel.org</li></a>
 			      </ul>
 			  </div>
 			</div>
@@ -264,9 +261,8 @@ liorbengai 2020
 
 <textarea spellcheck="false" id="utoPgm">
 // configure to random binary: 10% white
-setup = vec( stp(random(), 0.1) );
-// use larger cursor pen
-pen.w = 10;
+setup = vec(stp(0.9, rand()));
+
 // run Conway's game of life
 update = add(eql(3, V9), mlt(eql(4, V9), V));
 </textarea>
@@ -402,7 +398,6 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 			runPgm(true);
 			uto.zoom(zoom);
 			uto.fps(fps);
-			uto.config();
 		}
 
 
@@ -456,8 +451,8 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 
 		document.getElementById("mainCanvas").addEventListener("mousemove", function(e){
 
-			var x = Math.round(uto.getMouseX() * 10000)/10000 ;
-			var y = Math.round(uto.getMouseY() * 10000)/10000 ;
+			var x = Math.round(uto.getCursorX() * 10000)/10000 ;
+			var y = Math.round(uto.getCursorY() * 10000)/10000 ;
 			var info = "mouse: [ " + x + " , " + y + " ]";
 			document.getElementById("mouseCoords").innerHTML = info;
 		})
@@ -517,7 +512,7 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 			}
 
 			document.getElementById("inputConfig").addEventListener('click', function(){
-				uto.config();
+				uto.setup();
 			});
 
 			document.getElementById("inputRun").addEventListener('click', function(){
@@ -633,7 +628,7 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 				data += 'var uto;uto = new utomata(' + wid + ', ' + hei + ');';
 				data += 'uto.zoom(' + zoom + ');';
 				data += 'uto.fps(' + fps + ');';
-				data += 'uto.config();';
+				data += 'uto.setup();';
 				data += 'uto.run(document.getElementById("utoPgm").innerHTML);';
 				data += "</" + "script></html>";
 
@@ -694,7 +689,7 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 				//CMD+U
 			  if ((window.navigator.platform.match("Mac") ? e.metaKey : e.ctrlKey)  && e.keyCode == 85) {
 					e.preventDefault();
-			    uto.config();
+			    uto.setup();
 			  }
 
 				//CMD+D

@@ -363,7 +363,7 @@ function utomata(_wid, _hei, _canvasId)
 
   	// Initialise WebGL
   	try {
-      gl = canvas.getContext( 'experimental-webgl', {preserveDrawingBuffer: true} );
+      gl = canvas.getContext( 'webgl2', {preserveDrawingBuffer: true} );
   	} catch( error ) { }
 
   	if ( !gl ) {
@@ -434,7 +434,7 @@ function utomata(_wid, _hei, _canvasId)
       // var fragment = 'void main(){ float a = 10.0; gl_FragColor = vec4(1.0);}';
 
       // console.log(params.transition);
-      var vs = createShader( 'attribute vec3 position; void main() { gl_Position = vec4( position, 1.0 ); }', gl.VERTEX_SHADER );
+      var vs = createShader( '#version 300 es \nprecision highp float;\nin vec3 position; void main() { gl_Position = vec4( position, 1.0 ); }', gl.VERTEX_SHADER );
       var fs = createShader( fragment, gl.FRAGMENT_SHADER );
     }catch{
       console.error("cannot create shader");
@@ -930,7 +930,7 @@ function utomata(_wid, _hei, _canvasId)
 
   function getUtoFragA(){
 
-      var res = `
+      var res = `#version 300 es
     //////////////////////////////////////////
     //
     // UTOMATA GLSL
@@ -944,9 +944,10 @@ function utomata(_wid, _hei, _canvasId)
     #define G 1.61803398874989484820
     #define SQ2 1.41421356237309504880
 
-    #ifdef GL_ES
+    out vec4 fragColor;
+    in vec4 fragCoord;
     precision highp float;
-    #endif
+
 
     // Φ = Golden Ratio
     const float PHI = 1.61803398874989484820459;
@@ -1087,12 +1088,12 @@ function utomata(_wid, _hei, _canvasId)
 
 
     // INEQUALITY
-    vec4 not(vec4 a, vec4 b){return vec4(1.0) - (stp(a,b) * stp(b,a));}
-    float not(float a, float b){return 1.0 - (stp(a,b) * stp(b,a));}
-    vec4 not(vec4 a, float b){return vec4(1.0) - (stp(a,vec4(b)) * stp(vec4(b),a));}
-    vec4 not(float a, vec4 b){return vec4(1.0) -  (stp(vec4(a),b) * stp(b,vec4(a)));}
-    vec4 not(vec4 a){return vec4(0.0);}
-    float not(float a){return 0.0;}
+    vec4 nt(vec4 a, vec4 b){return vec4(1.0) - (stp(a,b) * stp(b,a));}
+    float nt(float a, float b){return 1.0 - (stp(a,b) * stp(b,a));}
+    vec4 nt(vec4 a, float b){return vec4(1.0) - (stp(a,vec4(b)) * stp(vec4(b),a));}
+    vec4 nt(float a, vec4 b){return vec4(1.0) -  (stp(vec4(a),b) * stp(b,vec4(a)));}
+    vec4 nt(vec4 a){return vec4(0.0);}
+    float nt(float a){return 0.0;}
 
 
     // LRG
@@ -1286,13 +1287,13 @@ function utomata(_wid, _hei, _canvasId)
 
     // RETURN A PSEUDO RANDOM NUMBER [0.0 - 1.0]
     float rand(float _seed) {
-      vec2 st = gl_FragCoord.xy / resolution.xy;
+      vec2 st = fragCoord.xy / resolution.xy;
       return fract(sin(dot(st.xy, vec2(randSeed*12.9898,_seed*78.233)))* 43758.5453123);
     }
 
     // auto seed
     float rand() {
-      vec2 st = gl_FragCoord.xy / resolution.xy;
+      vec2 st = fragCoord.xy / resolution.xy;
       return fract(sin(dot(st.xy, vec2(randSeed*12.9898,78.233)))* 43758.5453123);
     }
 
@@ -1329,7 +1330,7 @@ function utomata(_wid, _hei, _canvasId)
     // }
     //
     // float rand(float _seed) {
-    //   vec2 st = gl_FragCoord.xy / resolution.xy;
+    //   vec2 st = fragCoord.xy / resolution.xy;
     //   // return randomize();
     //   return fract(sin(dot(st.xy, vec2(randSeed*12.9898,_seed*78.233)))* 43758.5453123);
     //
@@ -1389,23 +1390,23 @@ function utomata(_wid, _hei, _canvasId)
 
     // GET A CELL VALUE (ABSOLUTE COORD)
     vec4 get(float _x, float _y){
-      return texture2D( backbuffer, vec2(_x, _y) );
+      return texture( backbuffer, vec2(_x, _y) );
     }
     vec4 get(vec2 pos){
-      return texture2D( backbuffer, vec2(pos.x, pos.y) );
+      return texture( backbuffer, vec2(pos.x, pos.y) );
     }
 
 
     // set a coordinate to a color
     vec4 set(float _x, float _y, vec4 c){
-      vec2 st = gl_FragCoord.xy / resolution.xy;
+      vec2 st = fragCoord.xy / resolution.xy;
       vec4 cell = vec4( st.x, st.y, max(1.0/resolution.x, 1.0/resolution.y), max(1.0/resolution.x, 1.0/resolution.y) );
       return c * vec( stp(dst(vec2(0.5 + cell.w/2.0), cell.xy), cell.w/2.0 ));
     }
 
     // set a coordinate to 1.0
     vec4 set(float _x, float _y){
-      vec2 st = gl_FragCoord.xy / resolution.xy;
+      vec2 st = fragCoord.xy / resolution.xy;
       float rat = resolution.x / resolution.y;
       vec4 cell = vec4( st.x, st.y, max(1.0/resolution.x, 1.0/resolution.y), max(1.0/resolution.x, 1.0/resolution.y) );
 
@@ -1414,7 +1415,7 @@ function utomata(_wid, _hei, _canvasId)
 
     // set a coordinate to 1.0
     vec4 set(vec2 pos){
-      vec2 st = gl_FragCoord.xy / resolution.xy;
+      vec2 st = fragCoord.xy / resolution.xy;
       float rat = resolution.x / resolution.y;
       vec4 cell = vec4( st.x, st.y, max(1.0/resolution.x, 1.0/resolution.y), max(1.0/resolution.x, 1.0/resolution.y) );
 
@@ -1424,11 +1425,11 @@ function utomata(_wid, _hei, _canvasId)
 
     // GET A NEIGHBOUR RELATIVE TO SELF
     vec4 U(float _x){
-      return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(_x, 0.0)));
+      return texture(backbuffer, (fragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(_x, 0.0)));
     }
 
     vec4 U(float _x, float _y){
-      vec2  uv = gl_FragCoord.xy / resolution.xy;
+      vec2  uv = fragCoord.xy / resolution.xy;
       vec2 grid = vec2(resolution.x, resolution.y);
       vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
       float col = flr(cell.x*tiles.x)/tiles.x;
@@ -1436,26 +1437,26 @@ function utomata(_wid, _hei, _canvasId)
 
       vec4 res = get( col + mod(cell.x +_x*cell.w, 1.0/tiles.x)  , row + mod(cell.y + _y*cell.w, 1.0/tiles.y) );
 
-      // return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(_x, _y)));
+      // return texture(backbuffer, (fragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(_x, _y)));
       return res;
     }
 
     vec4 U(vec2 p){
-      return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(p.x, p.y)));
+      return texture(backbuffer, (fragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(p.x, p.y)));
     }
 
     vec4 U(vec3 p){
-      return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(p.x, p.y)));
+      return texture(backbuffer, (fragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(p.x, p.y)));
     }
 
     vec4 U(vec4 p){
-      return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(p.x, p.y)));
+      return texture(backbuffer, (fragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(p.x, p.y)));
     }
 
 
     // tile function with non uniform params
     float tile(float col, float _cols, float row, float _rows ){
-      vec2  uv = gl_FragCoord.xy / resolution.xy;
+      vec2  uv = fragCoord.xy / resolution.xy;
       vec2 grid = vec2(resolution.x, resolution.y);
       vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
       return stp(col/_cols, cell.x) * stp( cell.x, (col+1.0)/_cols) * stp(row/_rows, cell.y) * stp( cell.y, (row+1.0)/_rows);
@@ -1463,7 +1464,7 @@ function utomata(_wid, _hei, _canvasId)
 
     // tile function with the set uniforms
     float tile(float col, float row ){
-      vec2  uv = gl_FragCoord.xy / resolution.xy;
+      vec2  uv = fragCoord.xy / resolution.xy;
       vec2 grid = vec2(resolution.x, resolution.y);
       vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
       return stp(col/tiles.x, cell.x) * stp( cell.x, (col+1.0)/tiles.x) * stp(row/tiles.y, cell.y) * stp( cell.y, (row+1.0)/tiles.y);
@@ -1477,7 +1478,7 @@ function utomata(_wid, _hei, _canvasId)
     void main()
     {
         // VARS
-        vec2  uv = gl_FragCoord.xy / resolution.xy;
+        vec2  uv = fragCoord.xy / resolution.xy;
         vec2 grid = vec2(resolution.x, resolution.y);
         vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
         vec4 crsr = vec4(mouse.x , mouse.y, mouseDown, 0.0);
@@ -1521,7 +1522,7 @@ function utomata(_wid, _hei, _canvasId)
     update.a = max(`+ params.alpha +` , update.a);
     update = (doConfig * setup) + ((1.0-doConfig) * update);
 
-    gl_FragColor = update;
+    fragColor = update;
     }
     `
     return res;
@@ -1529,26 +1530,26 @@ function utomata(_wid, _hei, _canvasId)
 
 
   function getVertexShader(){
-    var res = `
-    attribute vec3 position;
+    var res = `#version 300 es
+    precision highp float;
+    out vec3 fragCoord;
     void main() {
-        gl_Position = vec4( position, 1.0 );
+        fragCoord = vec4( position, 1.0 );
     }
     `
     return res;
   }
 
   function getFragmentShader(){
-    var res = `
-    #ifdef GL_ES
+    var res = `#version 300 es
     precision highp float;
-    #endif
+
     uniform vec2 resolution;
     uniform sampler2D texture;
     void main() {
-        vec2 uv = gl_FragCoord.xy / resolution.xy;
+        vec2 uv = fragCoord.xy / resolution.xy;
         uv.y = 1.0 - uv.y;
-        gl_FragColor = texture2D( texture, uv );
+        fragColor = texture( texture, uv );
     }
     `
 
