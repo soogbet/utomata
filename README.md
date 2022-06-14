@@ -17,13 +17,15 @@ A Javascript/webGL framework for [Cellular Automata](https://en.wikipedia.org/wi
     * [Introduction](#intro)
     * [Getting started](#create)
     * [Transition Functions](#trans)
+    * [Operators](#os)
+    * [Variables](#vrs)
     * [Neighbourhoods](#neighbour)
-    * [Applying a configuration](#conig)
-1. #### [Examples](#examples)
+    * [Configuration](#conig)
+<!-- 1. #### [Examples](#examples)
     * [Game of Life](#GOL)
     * [Elementary Automata](#elementary)
     * [Sandpile](#sandpile)
-    * [Reaction Diffusion](#RD)
+    * [Reaction Diffusion](#RD) -->
 1. #### [API](#api)
     * [Methods](#methods)
     * [Setters](#setters)
@@ -69,7 +71,7 @@ NB: you can also follow this guide using the [sandbox](https://soogbet.github.io
 </html>
 ```
 
-#### 2. Transition Functions <a name="trans"></a>
+#### 2. Transition Function <a name="trans"></a>
 
 
 The run() command expects a transition function to be applied to every cell in the system. The transition can be thought ot as just an operation that returns a value. For example: 2+3 is an operation that returns 4. it consists of two parameters - 2 and 3, and an operator- addition. Note that the transition function is not a javascript function but a string containing instructions in a special syntax that runs on the graphics card. This is what allows utomata to calculate large systems at high frame rates.
@@ -93,8 +95,23 @@ uto.run("vec( 1.0 )");
 uto.run("vec( rand() )");
 ```
 
+#### 2. Operators <a name="os"></a>
+utomata uses an internal set of [operators](#ops). Below are examples of simple transition functions that make use of them:
 
-#### 2. Variables
+```GLSL
+// calculate the gradient distance from the cursor
+vec(dst(cell.xy, crsr.xy))
+```
+```GLSL
+// create horizontal waves using the sine function and the time-step variable
+vec(sin(time*0.05 + cell.x*20)*0.5 + 0.5)
+```
+```GLSL
+// explore perlin noise using the mouse
+vec( nois(cell.xy*2 + cursor.xy*100) )
+```
+
+#### 3. Variables <a name="vrs"></a>
 
 utomata has a number of built in variables. Consider the following examples:
 
@@ -111,21 +128,6 @@ vec(crsr.x, crsr.y, 0.)
 uto.run("vec(nois(cell.xy crsr.xy)))");
 ```
 
-#### 3. Operators
-utomata uses an internal set of [operators](#ops). Below are examples of simple transition functions that make use of them:
-
-```GLSL
-// calculate the gradient distance from the cursor
-vec(dst(cell.xy, crsr.xy))
-```
-```GLSL
-// create horizontal waves using the sine function and the time-step variable
-vec(sin(time*0.05 + cell.x*20)*0.5 + 0.5)
-```
-```GLSL
-// explore perlin noise using the mouse
-vec( nois(cell.xy*2 + cursor.xy*100) )
-```
 
 #### 4. Neighbourhoods <a name="neighbour"></a>
 
