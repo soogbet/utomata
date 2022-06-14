@@ -20,27 +20,45 @@ liorbengai 2020
 <!DOCTYPE html>
 <html lang="en">
 	<head>
-		<title>utomata editor</title>
+		<title>utomata sandbox</title>
 		<meta charset="utf-8">
 		<style media="screen">
 		*,*::before,*::after {box-sizing: border-box;margin: 0;padding: 0;}
 		html, body{ width:100vw; height: 100vh;}
 		body{background:#AAA;font-family: Ariel, Helvetica, san-Serif, monospace; font-size: 12px;}
+
 		#panel{
 		  resize: both;
 		  border: 2px outset #AAA;
 
 			overflow: auto;
 		  min-width: 230px;
-		  min-height: 42px;
+		  min-height: 44px;
 			max-width: 100vw;
 		  max-height: 100vh;
-			width: 480px;
+			width: 540px;
 			height: 240px;
 			background: #EEE; position:fixed; top:0; left:0;
 			z-index: 1;
+			position: fixed;
+			top: 16px;
+			left: 16px;
 		}
 
+		#menu{
+			position: fixed;
+			top: 40px;
+			left: 20px;
+		  display:flex;
+			z-index:1000;
+		}
+
+		.menuBar{
+			background-color: #fff;
+			border: 1px solid #ccc;
+			height: 20px;
+			z-index: 1000;
+		}
 
 		.ace_editor{
 		  background: none;
@@ -52,7 +70,7 @@ liorbengai 2020
 			width: calc(100% - 16px);
 			height: calc(100% - 60px);
 		}
-		#header{background: white; z-index: 100; position: sticky; top: 0; border: 1px solid #999;  width: 100%;  }
+		#header{background: white; z-index: 100; position: sticky; top: 0; border: 1px solid #999;  width: 100%; cursor: move  }
 		#header h1{ font-size: 12px; font-weight: bold; text-align: center;}
 
 		.titlebar{ color: white; background: #0001A8;padding: 2px 25px; border-bottom: 2px solid #000;overflow: hidden;}
@@ -61,18 +79,9 @@ liorbengai 2020
 		.dropdownItem input{ text-align: center; border: none; color:inherit; background:none;font-family: inherit; font-size: 11px}
 		.noselect {-webkit-user-select: none;user-select: none;}
 
-		.menuBar{
-			background-color: #fff;
-			border: 1px solid #ccc;
-			height: 18px;
-		}
 
-#menu{
-	position: fixed;
-	top: 23px;
-  display:flex;
-	z-index: 1000;
-}
+
+
 
 .menuBtn {
   cursor: pointer;
@@ -195,66 +204,68 @@ liorbengai 2020
 	</head>
 	<body ondrop="dropHandler(event);" ondragover="dragOverHandler(event);">
 
-			<div id="menu">
-			  <div>
-			      <div class="menuBtn">File</div>
-			      <ul class="dropdown-menu">
-			        <li class="dropdownItem" onclick="duplicatePage(true)">New</li>
-			        <li class="dropdownItem" onclick="duplicatePage(false)">Duplicate(cmd + D)</li>
-							<li class="dropdownItem" id="inputRestore">Restore last</li>
-			        <div class="menuSep"></div>
-			        <li class="dropdownItem disabled">Examples...</li>
-							<div class="menuSep"></div>
-							<li  class="dropdownItem" id="inputCopyLink">Copy link to program</li>
-			        <li  class="dropdownItem" id="inputSave">Save as HTML (cmd + S)</li>
-			        <li class="dropdownItem" onclick="saveImage('utomata', 'download')">Export as png</li>
-			      </ul>
-			  </div>
 
-			  <div>
-			      <div class="menuBtn">Set</div>
-			      <ul class="dropdown-menu">
-			        <li class="dropdownItem" id="inputConfig">Setup(cmd + U)</li>
-			        <li class="dropdownItem" id="inputRun">Stop (cmd + B)</li>
-			        <div class="menuSep"></div>
-							<li class="dropdownItem disabled" id="inputNoImg" onClick="noConfigImage()">Remove input image</li>
-
-							<div class="menuSep"></div>
-			        <li class="dropdownItem">Width(<input size="4" type="text" id="inputWid" value="1024">)</li>
-			        <li class="dropdownItem">Height(<input size="4" type="text" id="inputHei" value="1024">)</li>
-			        <li class="dropdownItem">Fps(<input size="2" type="text"  id="inputFps" name="" value="60">)</li>
-			        <li class="dropdownItem">Zoom(<input size="2" type="text"  id="inputZoom" name="" value="1">)</li>
-			      </ul>
-			    </div>
-
-			  <div>
-			      <div class="menuBtn">View</div>
-			      <ul class="dropdown-menu">
-			        <li class="dropdownItem" onclick="toggfullscreen()">Full screen (cmd + A)</li>
-			        <li class="dropdownItem" onclick="hidePanel()">Hide panel (cmd + H)</li>
-			        <li class="dropdownItem">Font-size(<input size="2" type="text"  id="inputFont" value="14">)</li>
-			      </ul>
-			  </div>
-
-			    <div>
-			      <div class="menuBtn">Help</div>
-			      <ul class="dropdown-menu">
-			        <a href="https://github.com/soogbet/utomata" target="_blank"><li class="dropdownItem">Programming guide</li></a>
-			        <a href="https://github.com/soogbet/utomata/blob/master/utomata.js" target="_blank"><li class="dropdownItem">Source</li></a>
-							<a href="https://utomata.net" target="_blank"><li class="dropdownItem">utomata.net</li></a>
-							<a href="http://labofbabel.org" target="_blank"><li class="dropdownItem">labofbabel.org</li></a>
-			      </ul>
-			  </div>
-			</div>
 
 
 			<div id="panel">
 				<div id="header">
 					<div class="titlebar">
-						<h1>utomata editor v0.1</h1>
+						<h1>utomata sandbox V0.2</h1>
 					</div>
 					<div class="menuBar"></div>
 				</div>
+				<div id="menu">
+				  <div>
+				      <div class="menuBtn">File</div>
+				      <ul class="dropdown-menu">
+				        <li class="dropdownItem" onclick="duplicatePage(true)">New</li>
+				        <li class="dropdownItem" onclick="duplicatePage(false)">Duplicate(cmd + D)</li>
+								<li class="dropdownItem" id="inputRestore">Restore last</li>
+				        <div class="menuSep"></div>
+				        <li class="dropdownItem disabled">Examples...</li>
+								<div class="menuSep"></div>
+								<li  class="dropdownItem" id="inputCopyLink">Copy link to program</li>
+				        <li  class="dropdownItem" id="inputSave">Save as HTML (cmd + S)</li>
+				        <li class="dropdownItem" onclick="saveImage('utomata', 'download')">Export as png</li>
+				      </ul>
+				  </div>
+
+				  <div>
+				      <div class="menuBtn">Set</div>
+				      <ul class="dropdown-menu">
+				        <li class="dropdownItem" id="inputConfig">Setup(cmd + U)</li>
+				        <li class="dropdownItem" id="inputRun">Stop (cmd + B)</li>
+				        <div class="menuSep"></div>
+								<li class="dropdownItem disabled" id="inputNoImg" onClick="noConfigImage()">Remove input image</li>
+
+								<div class="menuSep"></div>
+				        <li class="dropdownItem">Width(<input size="4" type="text" id="inputWid" value="1024">)</li>
+				        <li class="dropdownItem">Height(<input size="4" type="text" id="inputHei" value="1024">)</li>
+				        <li class="dropdownItem">Fps(<input size="2" type="text"  id="inputFps" name="" value="60">)</li>
+				        <li class="dropdownItem">Zoom(<input size="2" type="text"  id="inputZoom" name="" value="1">)</li>
+				      </ul>
+				    </div>
+
+				  <div>
+				      <div class="menuBtn">View</div>
+				      <ul class="dropdown-menu">
+				        <li class="dropdownItem" onclick="toggfullscreen()">Full screen (cmd + A)</li>
+				        <li class="dropdownItem" onclick="hidePanel()">Hide panel (cmd + H)</li>
+				        <li class="dropdownItem">Font-size(<input size="2" type="text"  id="inputFont" value="16">)</li>
+				      </ul>
+				  </div>
+
+				    <div>
+				      <div class="menuBtn">Help</div>
+				      <ul class="dropdown-menu">
+				        <a href="https://github.com/soogbet/utomata" target="_blank"><li class="dropdownItem">Programming guide</li></a>
+				        <a href="https://github.com/soogbet/utomata/blob/master/utomata.js" target="_blank"><li class="dropdownItem">Source</li></a>
+								<a href="https://utomata.net" target="_blank"><li class="dropdownItem">utomata.net</li></a>
+								<a href="http://labofbabel.org" target="_blank"><li class="dropdownItem">labofbabel.org</li></a>
+				      </ul>
+				  </div>
+				</div>
+
 
 <div class="ace-container">
 
@@ -299,7 +310,7 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 		editor.setTheme("ace/theme/terminal");
 		editor.session.setMode("ace/mode/glsl");
 
-		editor.setOption("showGutter", false);
+		editor.setOption("showGutter", true);
 		//editor.setTheme("ace/theme/terminal");
 		editor.setTheme("ace/theme/iplastic");
 
@@ -307,12 +318,12 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 	  editor.renderer.setShowPrintMargin(false);
 	  editor.setOption("showInvisibles", false);
 	  editor.setOption("selectionStyle", "text");
-	  editor.setOption("highlightActiveLine", false);
+	  editor.setOption("highlightActiveLine", true);
 	  editor.setOption("highlightSelectedWord", true);
 	  editor.setOption("cursorStyle", "wide");
 	  editor.setOption("useSoftTabs", false);
 	  editor.setOption("tabSize", 3);
-	  editor.setOption("fontSize", 14);
+	  editor.setOption("fontSize", 16);
 	  editor.setAutoScrollEditorIntoView(true);
 	  editor.setOption("maxLines", "Infinity");
 
@@ -351,8 +362,7 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 			hei = param;
 		}
 
-		uto = new utomata( wid, hei);
-
+		uto = new utomata( wid, hei);		
 
 		param = getParameterByName("zoom");
 		if(param !== null){
@@ -953,6 +963,53 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 			  zInner.style.top = iy + 'px';
 			  zInner.style.left = ix + 'px';
 			}
+
+
+			// Make the DIV element draggable:
+dragElement(document.getElementById("panel"));
+
+function dragElement(elmnt) {
+  var pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+  if (document.getElementById("header")) {
+    // if present, the header is where you move the DIV from:
+    document.getElementById("header").onmousedown = dragMouseDown;
+  } else {
+    // otherwise, move the DIV from anywhere inside the DIV:
+    elmnt.onmousedown = dragMouseDown;
+  }
+
+  function dragMouseDown(e) {
+    e = e || window.event;
+    e.preventDefault();
+    // get the mouse cursor position at startup:
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    document.onmouseup = closeDragElement;
+    // call a function whenever the cursor moves:
+    document.onmousemove = elementDrag;
+  }
+
+  function elementDrag(e) {
+    e = e || window.event;
+    e.preventDefault();
+    // calculate the new cursor position:
+    pos1 = pos3 - e.clientX;
+    pos2 = pos4 - e.clientY;
+    pos3 = e.clientX;
+    pos4 = e.clientY;
+    // set the element's new position:
+    elmnt.style.top = (elmnt.offsetTop - pos2) + "px";
+    elmnt.style.left = (elmnt.offsetLeft - pos1) + "px";
+		document.getElementById("menu").style.top = (elmnt.offsetTop - pos2 + 24) + "px";
+    document.getElementById("menu").style.left = (elmnt.offsetLeft - pos1 + 2) + "px";
+  }
+
+  function closeDragElement() {
+    // stop moving when mouse button is released:
+    document.onmouseup = null;
+    document.onmousemove = null;
+  }
+}
 
 
 

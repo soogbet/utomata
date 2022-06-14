@@ -49,6 +49,7 @@ function utomata(_wid, _hei, _canvasId)
     pMouseY: 0,
     mouseScl:1,
     randSeed: 123.01234,
+    useSeed:false,
     useCastInt: true,
     input: undefined,
     useInput: false,
@@ -114,10 +115,8 @@ function utomata(_wid, _hei, _canvasId)
 
   this.run = function(_transition){
 
-
-
     if(_transition !== undefined){
-      params.transition = processPgm(_transition);
+      params.transition = processPgm(_transition, true);
     }
 
     params.startTime =  Date.now();
@@ -142,7 +141,8 @@ function utomata(_wid, _hei, _canvasId)
   this.setup = function(_conf){
 
     if(_conf !== undefined){
-      params.config = processPgm(_conf);
+      params.config = processPgm(_conf, false);
+      console.log(params.config);
     }
 
     if(params.useInput){
@@ -154,7 +154,7 @@ function utomata(_wid, _hei, _canvasId)
   }
 
   this.update = function(_update){
-    params.transition = processPgm(_update);
+    params.transition = processPgm(_update, true);
   }
 
   this.setStepLimit = function(_step, _callback = null){
@@ -259,7 +259,13 @@ function utomata(_wid, _hei, _canvasId)
   }
 
   this.seed = function(s){
-    params.randSeed = s;
+    if( s !== undefined && s != false){
+        params.randSeed = s;
+        params.useSeed = true;
+    }else{
+      params.useSeed = false;
+    }
+
   }
 
   // GETTERS
@@ -774,7 +780,11 @@ function utomata(_wid, _hei, _canvasId)
     if ( !currentProgram ) return;
 
     params.elapsedTime = Date.now() - params.startTime;
-    params.randSeed = Math.random();
+
+    if(!params.useSeed){
+        params.randSeed = Math.random();
+    }
+
     // Set uniforms for custom shader
 
     gl.useProgram( currentProgram );
@@ -869,7 +879,7 @@ function utomata(_wid, _hei, _canvasId)
 
   }
 
-  function processPgm(pgm){
+  function processPgm(pgm, insertUpdate){
     pgm = pgm.replace(/max\s*\(/g, "mx(");
     pgm = pgm.replace(/min\s*\(/g, "mn(");
     pgm = pgm.replace(/mod\s*\(/g, "md(");
@@ -892,11 +902,12 @@ function utomata(_wid, _hei, _canvasId)
     }
     // console.log("program: " + pgm);
 
+    if(insertUpdate){
+      var updateRegex = new RegExp( /update\s*=/ );
 
-    var updateRegex = new RegExp( /update\s*=/ );
-
-    if(pgm.search(updateRegex) === -1){
-      pgm = "update=vec(" + pgm + ")";
+      if(pgm.search(updateRegex) === -1){
+        pgm = "update=vec(" + pgm + ")";
+      }
     }
 
     return pgm;
@@ -1281,64 +1292,34 @@ function utomata(_wid, _hei, _canvasId)
 
 
 
+    // RETURN A PSEUDO RANDOM NUMBER OR VECTOR [0.0 - 1.0]
 
-
-
-    // RETURN A PSEUDO RANDOM NUMBER [0.0 - 1.0]
     float rand(float _seed) {
       vec2 st = gl_FragCoord.xy / resolution.xy;
+      //return random(st.x, st.y, _seed);
       return fract(sin(dot(st.xy, vec2(randSeed*12.9898,_seed*78.233)))* 43758.5453123);
     }
 
-    // auto seed
     float rand() {
       vec2 st = gl_FragCoord.xy / resolution.xy;
-      return fract(sin(dot(st.xy, vec2(randSeed*12.9898,78.233)))* 43758.5453123);
+      return rand(1.0);
     }
 
-
-    vec4 rand(float _seedA,float _seedB, float _seedC, float _seedD ) {
-      return vec4(rand(_seedA),rand(_seedB),rand(_seedC),rand(_seedD));
+    vec4 rand(float _seedA,float _seedB ) {
+      return vec4(rand(_seedA),rand(_seedB),1.0, 1.0);
     }
 
     vec4 rand(float _seedA,float _seedB, float _seedC ) {
       return vec4(rand(_seedA),rand(_seedB),rand(_seedC),1.0);
     }
 
-    float random_det(in vec2 st) {
-        return fract(sin(dot(st.xy,
-                             vec2(12.9898,78.233)))
-                     * 43758.5453123);
+    vec4 rand(float _seedA,float _seedB, float _seedC, float _seedD ) {
+      return vec4(rand(_seedA),rand(_seedB),rand(_seedC),rand(_seedD));
     }
 
 
-
-    // https://www.shadertoy.com/view/WdSSRt
-    // uint rot(uint x, int k) {
-    //     return (x << k) | (x >> (32 - k));
-    // }
-
-    // float ramdomize() {
-    //     uint s0 = state[0];
-    //     uint s1 = state[1];
-    //     uint result = rot(s0 * 0x9e3779bbu, 5) * 5u;
-    //     s1 ^= s0;
-    //     state[0] = rot(s0, 26) ^ s1 ^ (s1 << 9);
-    //     state[1] = rot(s1, 13);
-    //     return float(result) / float(0xffffffffu);
-    // }
-    //
-    // float rand(float _seed) {
-    //   vec2 st = gl_FragCoord.xy / resolution.xy;
-    //   // return randomize();
-    //   return fract(sin(dot(st.xy, vec2(randSeed*12.9898,_seed*78.233)))* 43758.5453123);
-    //
-    // }
-    //
-    // float rand() {
-    //   return randomize();
-    // }
-
+    // TODO:
+    //when moving to WEBGL 2.0 - lookup https://www.shadertoy.com/view/WdSSRt
 
 
     // from: https://www.shadertoy.com/view/MdsGDN
@@ -1482,13 +1463,6 @@ function utomata(_wid, _hei, _canvasId)
         vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
         vec4 crsr = vec4(mouse.x , mouse.y, mouseDown, 0.0);
         vec4 pcrsr = vec4(pmouse.x , pmouse.y, 0.0, 0.0);
-
-        // random number generator
-        // state[0] = floatBitsToUint(uv.x);
-        // state[1] = floatBitsToUint(uv.y);
-        // // Necessary to shuffle the y-coordinate into the first slot,
-        // // and to scramble the x-coordinate
-        // randomize();
 
         // neighbourhood shortcuts
         vec4 V =  U(0.,0.);

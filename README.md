@@ -6,6 +6,9 @@
 <!-- other links ? -->
 <!-- a touchdesigner COMP implementation -->
 [utomata.net](https://utomata.net)
+[sandbox](https://soogbet.github.io/utomata/)
+[lib](https://soogbet.github.io/utomata/utomata.js)
+[labofbabel.org](http://labofbabel.org)
 
 ### Table of Contents
 
@@ -38,31 +41,32 @@
 <!DOCTYPE html>
 <html>
    <body></body>
-   <script src="utomata.js"></script>
+   <script src="https://soogbet.github.io/utomata/utomata.js"></script>
    <script>
-      // create a system
-      var uto = new  utomata(512, 512);
-      // configure to random binary: 10% white
-      uto.setup("vec( stp(random(), 0.1))");
-      // run Conway's game of life
-      uto.run("add(eql(3, V9), mlt(eql(4, V9), V))");
+     // create a system with 1M cells
+     var uto = new  utomata(1024, 1024);
+     // configure to random binary: 10% white
+     uto.setup("vec( stp(rand(), 0.1) )");
+     // run Conway's game of life
+     uto.run("add(eql(3, V9), mlt(eql(4, V9), V))");
    </script>
 </html>
 ```
 
 # Introduction <a name="intro"></a>
 
-[Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) (CA) is a family of algorithms featuring discrete entities (cells) that continuously interact with one another. Typically, they are organised in a fixed, two dimensional, regular grid. At regular intervals, all cells simultaneously transition from their current state to a new state, while consulting the states of their neighbours. This is called the *transition function*. Cell state may take any form, however, numerical data is most commonly used. As each cell in the system performs this transition, it both affects and is affected by its neighbours over time, causing a feedback loop from which complex, higher-order structures may emerge.
-There are countless possible transition functions, almost all of which quickly drive the system towards either a uniform, static global state or to utter noise. However, there are also (countless still) functions that result in the emergence of coherent structures that posses interesting,  beautiful and potentially even useful patterns of behaviour. Many of which have already been discovered in the 70+ years of CA research. Most will never be.
+[Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) (CA) is a family of algorithms featuring discrete entities *(cells)* that continuously interact with one another. Typically, the cells are organised as a fixed, two dimensional grid. At regular intervals *(time steps)*, each cell calculates its new value *(state)* using a mathematical or logical formula *(transition function)*, while consulting the states of cells around it *(neighbourhood)*. This causes a feedback loop from which complex, higher-order structures may emerge.
 
-Utomata is framework for exploration of CA algorithms. It is designated for trans-disciplinary research in computer science, art, design, education or any combination of the above. It uses WebGL to calculate CA transition functions, allowing hardware accelerated implementations to run in the browser. It is light weight, dependency free and easy to embed in any web page. Utomata's minimalist functional syntax can express any algorithm up to outer-totalistic 4D continuous state systems or equivalent.
+There are countless possible transition functions, most of which quickly drive the system towards either uniformity or noise. However, there are also (countless still) functions that result in the emergence of coherent structures that posses interesting, beautiful and potentially even useful patterns of behaviour.
+
+Utomata is Javascript/WebGL framework for exploration and study of novel cellular automata algorithms. It is designated for cross-disciplinary research with an emphasis on computational arts and artificial life. It's light weight, dependency free, hardware accelerated and easy to embed in any web page. Utomata's minimalist functional syntax can express any algorithm up to outer totalistic, any-neighbour, 4D continuous state CA's.
 
 
 # Programming Guide <a name="guide"></a>
 
 #### 1. Creating an HTML page <a name="create"></a>
 
-Utomata is Javascript library that can work in any HTML page. To get started, create a new text file with the following text:
+Utomata can work in any HTML page. To get started, create a new text file with the following text:
 
 ```html
 <!DOCTYPE html>
@@ -72,7 +76,7 @@ Utomata is Javascript library that can work in any HTML page. To get started, cr
    <script src="http://soogbet.gitbub.io/utomata/utomata.js"></script>
 </html>
 ```
-Saving this file with a .html extension and opening it with a modern Desktop browser (Preferably Chrome or Firefox) will tell it to render an empty page which accesses the utomata library directly from this repository.
+Saving this file with a .html extension and opening it in a browser will tell it to render an empty page which has access to utomata library.
 
 #### 2. Instantiating utomata <a name="instance"></a>
 
@@ -83,33 +87,39 @@ Add the following script tag after the first script:
   var uto = new utomata(256, 256);
 </script>
 ```
-This second script creates a new instance of utomata and stores it in a variable called *uto*. Our new system consists of 256 rows and 256 columns of cells (65,536 cells in total), and is now ready for work. A utomata system can be set to any size, however, powers of two (2, 4, 16, 32, ...) are generally better performant and very large systems (4K+) require dedicated graphics hardware in order to run smoothly.  
+This second script creates a new instance of utomata and stores it in a variable called *uto*. Our new system consists of 256 rows and 256 columns of cells (65,536 cells in total), and is now ready for work. A utomata system can be set to any size, however, powers of two (2, 4, 16, 32, ...) are generally faster and very large systems (4K+) require dedicated graphics hardware in order to run smoothly.
 
 #### 3. Applying a transition function <a name="trans"></a>
 
 Now that we have set up our page and our system, we may ask utomata to have all of its cells do something at regular intervals. Add the following line to the second script tag:
 
 ```js
-uto.run("vec(1, 0, 0, 1)");
+uto.run("vec( 1.0, 0.0, 0.0 )");
 ```
-The run() method accepts a transition rule that is applied to every cell in the system, (up to) 60 times per-second (fps). It is important to note that this rule is not a javascript function but a string containing instructions in a special syntax that runs on our graphics card. This is what allows utomata to calculate large systems at high frame rates.
+The run() method accepts a transition function that is applied to every cell in the system, (up to) 60 times per-second *(fps)*. Note that this rule is not a javascript function but a string containing instructions in a special syntax that runs on the graphics card. This is what allows utomata to calculate large systems at high frame rates.
 
-The above transition rule is a constant 3D vector. Utomata uses vectors to describe cell states as RGBA color. As such, each component in this vector conforms to its corresponding color component. Applying it as the transition function means that at each time step (also called a frame), each and every cell will adopt these 4 numbers as its new state - 1 for red, 0 for green, 0 for blue, and 1 for alpha (transparency), resulting in a static uniformly red system.
-
-```js
-uto.run("vec(1, 0.5 ,1)");
-```
-Utomata state vectors are normalized, that is, they are capped to numbers between zero and one. If the 4th vector component is not provided, alpha is assumed to 1.0 - fully opaque. The above rule tells all cells to have full Red, half green and full blue, resulting in pink. This notation can express any color that our screen can display.
+Utomata uses four dimensional vectors to describe cell states as RGBA color. the vec() function thus always returns a 4D vector. Each component in the above vector conforms to a corresponding color component - red, green and blue. So the above transition function asks for full red, no green and no blue, resulting in a static uniformly red system. For now, we will ignore the alpha channel and just consider RGB color. Note that even though the system appears static - each one of its cells actually chooses that red color 60 times every second. Here are a number of other simple transition functions:
 
 ```js
-uto.run("vec(cell.x, cell.y, 0)");
+uto.run("vec( 1.0 )");
 ```
-Uniform systems are ones in which all cells have the same color. This, of course, is the simplest possible transition rule, of which there are exactly 256^4 unique variations - all possible values of 32bit float color. The above rule uses the X and Y position of each cell to affect its red and green color respectively. Note that cell positions are also normalized such that the top left cell is at (0,0) and the bottom right cell is at (1, 1).
+Provideing just one value to vec applies it to all 3 components
 
 ```js
-uto.run("vec(random())");
+uto.run("vec(0.98, 0.5 , 0.34)");
 ```
-Static systems are also quite simple, as cell states never actually change over time. Running the above transition function will result in *white noise*, running at 60 fps. The random() function returns a normalized floating point number that each cell then adopts as its new state. Providing only a single number to a vector sets it to all four vector components, resulting in greyscale color.
+Any RGB color. values above 1.0 or below 0.0 are clamped.
+
+```js
+uto.run("vec( rand() )");
+```
+Set to a random value at each frame
+
+```js
+uto.run("vec(cell.x, cell.y, 0.0 )");
+```
+Use the x and y coordinate of the cell to set its red and green values
+
 
 
 <!-- Cells in a utomata system have a continuous, normalized 4D state. under the hood, they are calculated as GLSL fragment shaders, but utomata uses a higher level functional syntax for expressing the transition function applied to each cell.
@@ -121,7 +131,7 @@ The return value for all operators is always a 4 dimensional vector, however, th
 
 <!--
 maybe add the unary and binary operators here?
-It means providing two examples and quickly listing all operators here, and linking them to below.  
+It means providing two examples and quickly listing all operators here, and linking them to below.
 -->
 
 
@@ -138,7 +148,7 @@ vec(sin(time*0.05 + cell.x*20)*0.5 + 0.5)
 
 ```GLSL
 // explore perlin noise using the mouse
-vec( noise(cell.xy*2 + cursor.xy*100) )
+vec( nois(cell.xy*2 + cursor.xy*100) )
 ```
 
 <!-- #### Notes:
@@ -174,7 +184,7 @@ update = div(VNtotal, 4);
 // make the pen 30 pixels wide
 pen.w = 30;
 ```
-Accessing neighbour values can yield incredible complexity to the system, as it can bring rise to feedback loops in cell behaviours. Note that even though all cells execute the exact same transition function, they get different results because their neighbourhoods are different.  
+Accessing neighbour values can yield incredible complexity to the system, as it can bring rise to feedback loops in cell behaviours. Note that even though all cells execute the exact same transition function, they get different results because their neighbourhoods are different.
 
 ```GLSL
 // configure to random RGB
@@ -216,7 +226,7 @@ V4      V5      V6      V7
 + + + | + + + |
 + - + | + * + |
 + + + | + + + |
-V8      V9     
+V8      V9
 ```
 
 Note that some include the value of the cell itself within the total and others do not.
@@ -330,7 +340,7 @@ update = add(frc(V), vec( diffR * hood.r  - rgg + ( F*(1.0 - V.r)), diffG * hood
 ### Utomata API <a name="api"></a>
 
 #### Utomata(width, height) <a name="methods"></a>
-The constructor creates a new instance of utomata and appends a canvas element of the same size to the **body** tag.
+The constructor creates a new instance of utomata and appends a canvas element of the same size to the body HTML tag.
 
 ```js
 var uto = new Utomata(1024, 1024);
@@ -341,7 +351,7 @@ The run() method starts calculating the system at up to 60 frames per second. It
 
 ```js
 // run a white noise transition function
-uto.run("vec(random());");
+uto.run("vec(rand());");
 ```
 
 #### stop()
@@ -362,18 +372,18 @@ uto.setup();
 uto.setup("vec(1)");
 
 // configure to a random RGB color
-uto.setup("vec(random(1), random(2), random(3),)");
+uto.setup("rand(1.0, 2.0, 3.0)");
 
 // configure to a random binary state with 10% white
-uto.setup("stp(random(), 0.1)");
+uto.setup("stp(rand(), 0.1)");
 
 // configure using perlin noise
-uto.setup("noise(cell.xy*10)");
+uto.setup("nois(cell.xy)");
 
 ```
 
 #### size(width, height)
-The size method creates a new system with the new width and height provided, without calling the constructor. Note that this will reset the system to its current configuration.
+The size method resets the system with the new width and height provided.
 
 ```GLSL
 // resize to 256 by 256
@@ -381,23 +391,23 @@ uto.size(256, 256);
 ```
 
 #### width(value)
-The width method creates a new system with a new width and current height, without calling the constructor. Note that this will reset the system to its current configuration.
+The width method resets the system with a new width and current height.
 
 ```GLSL
-// change width to 16
+// change width to 16 cells
 uto.width(16);
 ```
 
 #### height(value)
-The height method creates a new system with a new height and current width, without calling the constructor. Note that this will reset the system to its current configuration.
+The height method resets the system with a new height and current width.
 
 ```GLSL
 // change height to 1024
-uto.size(1024);
+uto.height(1024);
 ```
 
 #### fps(n)
-The fps() method determines the framerate of utomata - that is - how many steps-per-second the system runs. Values between 0 (none) and 60 are accepted. Note that the actual framerate depends greatly on the width and height of the system and on your graphics card. setting the framerate to 60 means that utomata will TRY to render at 60 fps, but the actual rate is likely to be less than that.
+The fps() method determines the max framerate of utomata. It accepts any integer value between 0 (stop) and 60. Note that the actual framerate depends greatly on the size and type of the system and on your hardware.
 
 ```js
 // run utomata at 12 steps per second
@@ -405,7 +415,7 @@ uto.fps(12);
 ```
 
 #### zoom(value)
-The zoom method changes the size of the canvas while keeping the cell count intact. The paramater can generally be thought of the number of pixels occupied by each cell.
+The zoom method changes the size of the canvas without affecting the system itself.
 
 ```js
 // set magnification to 16 pixels per cell
@@ -424,30 +434,29 @@ Utomata has two ways to treat the cells which are at the egde of the system (for
 uto.edge("REPEAT");
 ```
 
-
 #### input(img)
-Utomata accepts an optional input image. It can be used both in the configuration rule and also in the program itself using the I value and I() function. The input must be a reference to an HTML <img> element.
+Utomata accepts an optional static input image. It can be used both in the configuration rule and also in the program itself using the I value and I() function. The input must be a reference to an HTML <img> element.
 
 ```js
 // set input image from the document
-uto.input(document.getElementById("myImg"));
+uto.input(document.getElementById("myStaticConfig"));
 ```
 
 ```js
 // stop using an image and set config rule intsead
 uto.input(false);
-uto.config("vec(0)")
+uto.config("vec(0.0)");
 ```
 
 #### seed(n)
-Utomata uses an internal (and quite simple) pseudorandom number generator. The seed value can be set for getting deterministic results from the random() function.
+Utomata uses an internal pseudorandom number generator. The seed value can be set for getting deterministic results from the rand() function.
 
 ```js
 uto.seed(4.2342562);
 ```
 
 #### setUniform(key, value)
-Utomata accepts external variables to allow input from UI elements, external API's, sensors, etc. These are known as uniforms because their value would be the same for all cells in the system. Uniforms are entered as key-value pairs, and once entered can be used inside the transition function as float variables. Changing a value for an existing key works the same way as inserting it.
+Utomata can make use of external variables to allow input from UI elements, external API's, sensors, etc. These are known as uniforms because their value is the same for all cells in the system. Uniforms are entered as key-value pairs, and once entered can be used inside the transition function as float variables. Changing a value for an existing key works the same way as inserting it.
 
 ```HTML
 <input type="range" min="0" max="1.0"  step="0.01" value=".5" onchange="uto.setVar('redValue', this.value)" >
@@ -460,15 +469,22 @@ uto.setVar('redValue', 0.5);
 uto.run("V = vec(redValue,0,0);");
 ```
 
-<!-- #### saveImage()
-Return a reference to the system as an image. This is useful for saving, displaying or rerouting to another system.
+#### saveImg()
+Download the canvas as a png file.
 
 ```js
-// get current list of uniforms
-``` -->
+uto.saveImg();
+```
+#### getImg()
+returns a refernce to the image as a javascript object.
+
+```js
+var currentState = uto.getImg();
+document.getElementById("myImage").src = currentState;
+```
 
 #### errors() <a name="getters"></a>
-Return an array of current shader errors, if no errors exist the array will be returned empty.
+Return an array of current errors in utomata.
 
 ```js
 console.log(uto.errors());
@@ -478,63 +494,63 @@ console.log(uto.errors());
 Return an object containing the key-value pairs for all uniforms defined on the system.
 
 ```js
-var uniforms = uto.getUniforms();
+console.log( uto.getUniforms() );
 ```
 
 #### getInfo()
 Return a formatted string containing realtime system info
 
 ```js
-console.log(uto.getInfo());
+console.log( uto.getInfo() );
 ```
 
 #### getWidth()
 Return the current number of columns in the system
 
 ```js
-var utoWid = uto.getWidth();
+console.log( uto.getWidth() );
 ```
 
 #### getHeight()
 Return the current number of rows in the system
 
 ```js
-var utoHei = uto.getHeight();
+console.log( uto.getHeight() );
 ```
 
 #### getEdgeType()
 Return the current edge type
 
 ```js
-console.log(uto.getEdgeType());
+console.log( uto.getEdgeType() );
 ```
 
 #### getTransition()
 Return the current transition function
 
 ```js
-console.log(uto.getTransition());
+console.log( uto.getTransition() );
 ```
 
 #### getSetup()
 Return the current configuration function (only if set via the setup method)
 
 ```js
-console.log(uto.getSetup());
+console.log( uto.getSetup() );
 ```
 
 #### getCursorX()
 Return the current normalized position of the cursor on the x axis
 
 ```js
-console.log(uto.getCursorX());
+console.log( uto.getCursorX() );
 ```
 
 #### getCursorY()
 Return the current normalized position of the cursor on the x axis
 
 ```js
-console.log(uto.getCursorY());
+console.log( uto.getCursorY() );
 ```
 
 ## Language Reference <a name="ref"></a>
@@ -553,24 +569,22 @@ vec(a, b, c, d) >> vec4(a, b, c, d); -->
 
 ### Variables <a name="vars"></a>
 
-#### V
-
-#### V1, V2, ..., V9
+#### V, V1 V2, ..., V9
 
 #### grid
 
-#### pen
-
-#### cursor
-
 #### cell
+
+#### crsr
+
+#### pcrsr
 
 
 ### Binary operators <a name="binary"></a>
 
 Utomata is designed to work as a functional programming paradigm. At its core are a set op numerical operators that operate on floating point numbers and 2,3 and 4D vectors interchangeably. For unary operators this is trivial, as the operator's return value always matches its parameter. However, for binary operators the return value works as follows:
 
-* If 
+* If
 * The dimension of the return value always matches the first of its two parameters.
 
 #### add(a, b)
