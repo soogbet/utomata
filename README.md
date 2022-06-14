@@ -1,43 +1,41 @@
 
-# UTOMATA
-<i>utomata</i> is a Javascript/webGL framework for interactive, browser based [Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) experiments. It is designed for exploration of emergent virtual structures in computational art and design, modelling, simulation and procedural content generation.
+# utomata
+A Javascript/webGL framework for [Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) experiments.Primarily designed for interactive explorations of emergent virtual structures in computational art and design, modelling, simulation and procedural content generation.
 
 <!-- Examples collection on codepen -->
 <!-- other links ? -->
 <!-- a touchdesigner COMP implementation -->
-[utomata.net](https://utomata.net)
-[sandbox](https://soogbet.github.io/utomata/)
-[lib](https://soogbet.github.io/utomata/utomata.js)
-[labofbabel.org](http://labofbabel.org)
+* [utomata.net](https://utomata.net)
+* [sandbox](https://soogbet.github.io/utomata/)
+* [lib](https://soogbet.github.io/utomata/utomata.js)
+* [labofbabel.org](http://labofbabel.org)
 
 ### Table of Contents
 
-1. #### [Basic Usage](#basic)
-1. #### [Introduction](#intro)
 1. #### [Programming Guide](#guide)
-    * [Creating an HTML page](#create)
-    * [Instantiating Utomata](#instance)
-    * [Applying a transition function](#trans)
-    * [Accessing Neighbours](#neighbour)
+    * [Introduction](#intro)
+    * [Getting started](#create)
+    * [Transition Functions](#trans)
+    * [Neighbourhoods](#neighbour)
     * [Applying a configuration](#conig)
-1. #### [Case studies](#examples)
-    * [Elementary Automata](#elementary)
+1. #### [Examples](#examples)
     * [Game of Life](#GOL)
-    * [Abelian Sandpile](#sandpile)
+    * [Elementary Automata](#elementary)
+    * [Sandpile](#sandpile)
     * [Reaction Diffusion](#RD)
 1. #### [API](#api)
     * [Methods](#methods)
+    * [Setters](#setters)
     * [Getters](#getters)
 1. #### [Language Reference](#ref)
-    * [Data types](#types)
+    * [Neighbourhoods](#nei)
+    * [Operators](#ops)
+    * [Functions](#funcs)
     * [Variables](#vars)
-    * [Unary Operators](#unary)
-    * [Binary Operators](#binary)
-    * [Misc](#misc)
 
 
 
-# Introduction <a name="intro"></a>
+## Introduction <a name="intro"></a>
 
 [Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) (CA) is a family of algorithms featuring discrete entities *(cells)* that continuously interact with one another. Typically, the cells are organised as a fixed, two dimensional grid. At regular intervals *(time steps)*, each cell calculates its new value *(state)* using a mathematical or logical formula *(transition function)*, while consulting the states of cells around it *(neighbourhood)*. This causes a feedback loop from which complex, higher-order structures may emerge.
 
@@ -48,7 +46,7 @@ Utomata is Javascript/WebGL framework for exploration and study of novel cellula
 
 # Programming Guide <a name="guide"></a>
 
-#### 0. Getting started <a name="create"></a>
+#### 1. Getting started <a name="create"></a>
 
 Utomata can work in any HTML page. To get started create a new text file using a code editor such as [atom](https://atom.io/), paste the following snippet and save it as: uto1.html. Then open the file using a web browser.
 NB: you can also follow this guide using the [sandbox](https://soogbet.github.io/utomata/), or in [utomata.net](https://utomata.net)
@@ -59,17 +57,19 @@ NB: you can also follow this guide using the [sandbox](https://soogbet.github.io
    <body></body>
    <script src="https://soogbet.github.io/utomata/utomata.js"></script>
    <script>
-     // create a system with 1M cells
+     // 1. create a system with 1M cells
      var uto = new  utomata(1024, 1024);
-     // configure to random binary: 10% white
+
+     // 2. configure to random binary: 10% white
      uto.setup("vec( stp(rand(), 0.1) )");
-     // run Conway's game of life
+
+     // 3. run Conway's game of life
      uto.run("add(eql(3, V9), mlt(eql(4, V9), V))");
    </script>
 </html>
 ```
 
-#### 1. Transition Function <a name="trans"></a>
+#### 2. Transition Functions <a name="trans"></a>
 
 ```js
 uto.run("vec( 1.0, 0.0, 0.0 )");
@@ -125,7 +125,7 @@ uto.run("vec(nois(cell.xy crsr.xy)))");
 
 
 
-#### Operators
+#### 3. Operators
 
 <!--
 maybe add the unary and binary operators here?
@@ -153,7 +153,7 @@ vec( nois(cell.xy*2 + cursor.xy*100) )
 on random and noise in GLSL -->
 
 
-#### 4. Accessing the Neighbourhood <a name="neighbour"></a>
+#### 4. Neighbourhoods <a name="neighbour"></a>
 
 The examples in the previous section outlined the use of various formulae to control the colors of individual cells procedurally. This was done by using static vectors, mathematical operators, built-in variables and a number of functions that are commonly used in procedural content generation, such as sine, random and perlin noise. This echos the approach of programming fragment shaders from scratch, somewhat like in GLSLSandbox or ShaderToy. In fact, anything that was created on those websites can be adapted to utomata, as they are all based on the same underlying language - GLSL. However, This approach is not Cellular Automata, as it lacks a crucial ingredient - the **neighbourhood**. This section will introduce how to use neighbourhoods in our program and will demonstrate how this can lead to emergent, as opposed to procedural patterns.
 
@@ -197,57 +197,30 @@ update = U(rnd(nx), rnd(ny));
 ```
 The transition function above uses perlin noise for obtaining the value of a random neighbour and then adopts it, as is, as the new state of the cell. The consistency of the perlin noise function causes distinct clusters to emerge as different regions of the system pull towards the same direction.
 
-##### Totalistic Neighbourhoods
 
-Many cellular automata algorithms use a *totalistic neighbourhood*. This means that each cell refers to its neighbours only by summing up their accumulative states and using this total value in its transition function. The most commonly used totalistic neighbourhoods are the Von-Neumann neighbourhood (A) and the Moore neighbourhood (B):
-
-```GLSL
-- + - | + + +
-+ * + | + * +
-- + - | + + +
-A       B
-```
-
-Utomata has a number of built-in neighbourhoods ready for use:
-
-```GLSL
-- - - | - + - | - + - | + + +
-- * - | - - - | - * - | - - -
-- - - | - - - | - - - | - - -
-V       V1      V2      V3
-
-- + - | - + - | + + + | + + +
-+ - + | + * + | - - - | - * -
-- + - | - + - | + + + | + + +
-V4      V5      V6      V7
-
-+ + + | + + + |
-+ - + | + * + |
-+ + + | + + + |
-V8      V9
-```
-
-Note that some include the value of the cell itself within the total and others do not.
-<!--
-##### Custom neighbourhoods
-
-Utomata allows the use of any other neighbourhood you might thing of, even N-body systems in which the neighbourhood is composed of all cells in the system. However, keep in mind that looping through the entire system ~60 times per-second features exponential computational complexity - O(N^2), and is not generally suitable for large systems.
-
-```GLSL
-vec4 total = vec4(0);
-
-for(float i = 0; i < 32; i+=1.0){
-	for( float j = 0; j < 32; j+=1.0){
-		vec2 other = vec2(i/grid.x, j/grid.y);
-		total += val(other.x, other.y) ;
-	}
-}
-total /= (grid.x*grid.y);
-
-update = total;
-``` -->
 
 #### 5. Applying a Configuration <a name="config"></a>
+
+
+
+```GLSL
+// configure to a previously defined config function
+uto.setup();
+
+// configure to a white initial state:
+uto.setup("vec(1.0)");
+
+// configure to a random RGB color
+uto.setup("rand(1.0, 2.0, 3.0)");
+
+// configure to a random binary state with 10% white
+uto.setup("stp(rand(), 0.1)");
+
+// configure using perlin noise
+uto.setup("nois(cell.xy)");
+
+```
+
 
 CA's are often chaotic systems; extremely sensitive to initial conditions. The initial state of a system is called the *configuration* and it plays a vital role in its behaviour. In utomata this can be configured using the setup variable or the setup method. Consider the following:
 
@@ -271,7 +244,8 @@ setup = vec( stp(random(), 0.1));
 setup = vec( stp(dst(vec2(0.5), cell.xy), cell.w ));
 ```
 
-### Case Studies <a name="examples"></a>
+
+<!-- ### Case Studies <a name="examples"></a>
 
 
 #### Elementary Automata <a name="elementary"></a>
@@ -334,9 +308,9 @@ vec4 hood = V4 - V * 4.0;
 
 update = add(frc(V), vec( diffR * hood.r  - rgg + ( F*(1.0 - V.r)), diffG * hood.g  + rgg - ( (K + F)* V.g), 0,0));
 
-```
+``` -->
 
-### Utomata API <a name="api"></a>
+## API <a name="api"></a> <a name="methods"></a>
 
 #### Utomata(width, height) <a name="methods"></a>
 The constructor creates a new instance of utomata and appends a canvas element of the same size to the body HTML tag.
@@ -345,12 +319,20 @@ The constructor creates a new instance of utomata and appends a canvas element o
 var uto = new Utomata(1024, 1024);
 ```
 
+#### setup(config)
+The setup method configures the system to its initial state and accepts an optional configuration rule as a string. The configuration can use any operators but cannot access the neighbourhood (V values, U and val functions) because cells have no value at configuration.
+
+```js
+// configure the system to a random 10% white
+uto.setup("vec(stp(0.9, rand()))");
+```
+
 #### run(transition)
 The run() method starts calculating the system at up to 60 frames per second. It accepts a transition function (in string format). The transition is then applied to each cell in the system at each time step. If no transition is provided the previously used transition will be used. The default transition is "update = V;"
 
 ```js
-// run a white noise transition function
-uto.run("vec(rand());");
+// run a Game of life transition function
+uto.run("add(eql(3., V9), mlt(eql(4., V9), V))");
 ```
 
 #### stop()
@@ -360,32 +342,13 @@ The stop method pauses a currently running system. The same system can subsequen
 uto.stop();
 ```
 
-#### setup(config = null)
-The setup method configures the system to its initial state. It also accepts an optional configuration rule as a string. The configuration can use any operators but cannot access the neighbourhood (V values, U and val functions) because cells have no value at the time of configuration.
-
-```GLSL
-// configure to a previously defined config function
-uto.setup();
-
-// configure to a white initial state:
-uto.setup("vec(1)");
-
-// configure to a random RGB color
-uto.setup("rand(1.0, 2.0, 3.0)");
-
-// configure to a random binary state with 10% white
-uto.setup("stp(rand(), 0.1)");
-
-// configure using perlin noise
-uto.setup("nois(cell.xy)");
-
-```
+<a name="setters"></a>
 
 #### size(width, height)
 The size method resets the system with the new width and height provided.
 
 ```GLSL
-// resize to 256 by 256
+// resize the system
 uto.size(256, 256);
 ```
 
@@ -454,6 +417,14 @@ Utomata uses an internal pseudorandom number generator. The seed value can be se
 uto.seed(4.2342562);
 ```
 
+#### tile(Rows, Cols)
+The tile method divides the canvas into independent columns and rows, allowing the use of multiple transition functions side by side. the default is untiled (1,1).
+
+```js
+// divide the system into 4 separate tiles (two columns and two rows)
+uto.tile(2,2);
+```
+
 #### setUniform(key, value)
 Utomata can make use of external variables to allow input from UI elements, external API's, sensors, etc. These are known as uniforms because their value is the same for all cells in the system. Uniforms are entered as key-value pairs, and once entered can be used inside the transition function as float variables. Changing a value for an existing key works the same way as inserting it.
 
@@ -482,7 +453,9 @@ var currentState = uto.getImg();
 document.getElementById("myImage").src = currentState;
 ```
 
-#### errors() <a name="getters"></a>
+<a name="getters"></a>
+
+#### errors()
 Return an array of current errors in utomata.
 
 ```js
@@ -552,12 +525,12 @@ Return the current normalized position of the cursor on the x axis
 console.log( uto.getCursorY() );
 ```
 
-## Language Reference <a name="ref"></a>
 
+# Language Reference <a name="ref"></a>
 
-### Neighbourhood <a name="vars"></a>
+### Neighbourhoods <a name="nei"></a>
 
-#### Totalistic Neighbourhoods
+#### Totalistic
 
 ##### ``V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V24, V25``
 
@@ -586,7 +559,7 @@ V5      V6      V7      V8      V9
 V24         V25
 ```
 
-#### Outer-Totalistic Neighbourhoods
+#### Outer-Totalistic
 
 ##### ``U(x,y)``
 
@@ -609,7 +582,7 @@ add(V, get(crsr.x, crsr.y))
 ```
 
 
-### Operators
+### Operators <a name="ops"></a>
 
 utomata uses a functional programming paradigm. At its core are a set of operators that operate on floating point 4D vectors.
 
@@ -624,7 +597,7 @@ vec(a, b, c) >> vec4(a, b, c, 1.0)
 vec(a, b, c, d) >> vec4(a, b, c, d)
 ```
 
-### Binary operators <a name="binary"></a>
+### Binary
 
 For binary operators, utomata will always return a 4D vector regardless of input. This may sometimes be confusing as the input may be a float, a vec or one float and one vec. Consider the following scheme:
 
@@ -674,11 +647,11 @@ Return the distance between **a** and **b**
 #### ``atn(a, b)``
 Return the two component arc tangent of **a** and **b**
 
-### Unary operators <a name="unary"></a>
+### Unary
 
 For Unary operators utomata uses a similar approach to the one above. It appplies the operator on each component of the input and returns the result as a 4D vector. It follows the following scheme:
-```GLSL
 
+```GLSL
 op(f)              >> vec(op(f), op(f), op(f) ,op(f))
 op(f1, f2)         >> vec(op(f1), op(f1), op(f1) ,op(f2))
 op(f1, f2, f3)     >> vec(op(f1), op(f2), op(f3) , 1.0)
@@ -727,19 +700,52 @@ Return the arc cosine function of **a**
 #### ``atn(a)``
 Return the arc tangent cosine function of **a**
 
-### Functions <a name="misc"></a>
+### Functions <a name="funcs"></a>
 
-#### ``set(a, b)``
+#### ``set(x, y)``
+Set the value of any cell to vec(1.0).
+NB: You can multiply set(x,y) by any value to set the cell at x,y to it that value.
+
+```GLSL
+// set the center cell to a random value
+update += set(0.5, 0.5) * rand(1., 2., 3.);
+```
 
 #### ``rand(seed)``
+Return a random number between 0 and 1. The rand function takes an optional numerical seed value. utomata uses a rudimentary pseudorandom number generator with a unique seed per cell. If multiple random numbers are needed - use a unique seed for each call.
+
+```GLSL
+// configure to a random RGB vector
+setup = rand(1., 2., 3.);
+```
 
 #### ``nois(x, y)``
+Return the [perlin noise](https://en.wikipedia.org/wiki/Perlin_noise) z value for a given x and y coordinate.
 
+```GLSL
+// move along a perlin noise landscape using the cursor
+update = vec(noise(cell.xy + crsr.xy*10.));
+```
 
-#### grid
+### Variables <a name="vars"></a>
 
-#### cell
+#### ``grid.xy``
+The grid variable holds the (non-normalized) width and height of the system, such that grid.x equals the number of columns and grid.y equals the number of rows.
 
-#### crsr
+#### ``cell.xyw``
+The cell variable holds the normalized x and y coordinates of each cell.
+cell.z and cell.w hold maximal size of each cell: max(1.0/grid.x, 1.0/grid.y)
 
-#### pcrsr
+#### ``crsr.xyz``
+The crsr variable holds the current normalized x and y coordinates of the mouse cursor. crsr.z is 1. when the mouse is pressed and 0. otherwise.
+
+#### ``pcrsr.xy``
+The pcrsr variable holds the previous normalized x and y coordinates of the mouse cursor.
+
+#### ``time``
+The time variable counts the number of steps since the system was initialized.
+
+```GLSL
+// create moving bars using sin and stp function
+update = vec( stp(sin(cell.x*100.0 + time*0.1), 0));
+```
