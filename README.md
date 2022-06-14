@@ -5,6 +5,7 @@ A Javascript/webGL framework for [Cellular Automata](https://en.wikipedia.org/wi
 <!-- Examples collection on codepen -->
 <!-- other links ? -->
 <!-- a touchdesigner COMP implementation -->
+
 * [utomata.net](https://utomata.net)
 * [sandbox](https://soogbet.github.io/utomata/)
 * [lib](https://soogbet.github.io/utomata/utomata.js)
@@ -29,10 +30,9 @@ A Javascript/webGL framework for [Cellular Automata](https://en.wikipedia.org/wi
     * [Getters](#getters)
 1. #### [Language Reference](#ref)
     * [Neighbourhoods](#nei)
-    * [Operators](#ops)
     * [Functions](#funcs)
     * [Variables](#vars)
-
+    * [Operators](#ops)
 
 
 ## Introduction <a name="intro"></a>
@@ -71,24 +71,23 @@ NB: you can also follow this guide using the [sandbox](https://soogbet.github.io
 
 #### 2. Transition Functions <a name="trans"></a>
 
+
+The run() command expects a transition function to be applied to every cell in the system. The transition can be thought ot as just an operation that returns a value. For example: 2+3 is an operation that returns 4. it consists of two parameters - 2 and 3, and an operator- addition. Note that the transition function is not a javascript function but a string containing instructions in a special syntax that runs on the graphics card. This is what allows utomata to calculate large systems at high frame rates.
+
 ```js
 uto.run("vec( 1.0, 0.0, 0.0 )");
 ```
 
-The run() command expects a transition function that is to be applied to every cell in the system, (up to) 60 times per-second. Note that the transition function is not a javascript function but a string containing instructions in a special syntax that runs on the graphics card. This is what allows utomata to calculate large systems at high frame rates.
-
-utomata uses four dimensional vectors to describe cell states as RGBA color. the vec() function thus always returns a 4D vector. Each component in the above vector conforms to a corresponding color component - red, green and blue. So the above transition function asks for full red, no green and no blue, resulting in a static uniformly red system. For now, we will ignore the alpha channel and just consider RGB color. Note that even though the system appears static - each one of its cells actually chooses that red color 60 times every second. Here are a number of other simple transition functions:
-
-```js
-// Provideing just one value to vec applies it to all 3 components
-uto.run("vec( 1.0 )");
-```
+utomata uses four dimensional vectors to describe cell states as RGBA color. The vec() operator can be used to return such a vector. Each component in it conforms to a corresponding color component - red, green and blue. So the above transition function asks for full red, no green and no blue, resulting in a static uniformly red system. For now, we will ignore the alpha channel and just consider RGB color. Note that even though the system appears static - each one of its cells actually chooses that same red color 60 times every second. Below are a few more examples of valid transition functions:
 
 ```js
 // Any RGB color. values above 1.0 or below 0.0 are clamped.
 uto.run("vec(0.98, 0.5 , 0.34)");
 ```
-
+```js
+// Provideing just one value to vec applies it to all 3 components
+uto.run("vec( 1.0 )");
+```
 ```js
 // Set to a random value at each frame
 uto.run("vec( rand() )");
@@ -97,151 +96,77 @@ uto.run("vec( rand() )");
 
 #### 2. Variables
 
-utomata comes with a number of built in variables.
-NB: We will now only focus on the transition function that goes into uto.run(). you can use the following snippet:
-
-
-```js
-var uto = new  utomata(256, 256);
-uto.run(`
-  --your-code-here--
-  `);
-```
+utomata has a number of built in variables. Consider the following examples:
 
 ```GLSL
 // Use the x and y coordinate of the cell to set its red and green values
 vec(cell.x, cell.y, 0.)
 ```
-
 ```GLSL
 //
 vec(crsr.x, crsr.y, 0.)
 ```
-
 ```GLSL
 // Use the cursor position to move along a perlin noise landscape
 uto.run("vec(nois(cell.xy crsr.xy)))");
 ```
 
-
-
 #### 3. Operators
-
-<!--
-maybe add the unary and binary operators here?
-It means providing two examples and quickly listing all operators here, and linking them to below.
--->
-
-
-Below is a collection of simple transition functions to play around with:
+utomata uses an internal set of [operators](#ops). Below are examples of simple transition functions that make use of them:
 
 ```GLSL
-// calculate the distance from the cursor
+// calculate the gradient distance from the cursor
 vec(dst(cell.xy, crsr.xy))
 ```
 ```GLSL
 // create horizontal waves using the sine function and the time-step variable
 vec(sin(time*0.05 + cell.x*20)*0.5 + 0.5)
 ```
-
 ```GLSL
 // explore perlin noise using the mouse
 vec( nois(cell.xy*2 + cursor.xy*100) )
 ```
 
-<!-- #### Notes:
-on random and noise in GLSL -->
-
-
 #### 4. Neighbourhoods <a name="neighbour"></a>
 
-The examples in the previous section outlined the use of various formulae to control the colors of individual cells procedurally. This was done by using static vectors, mathematical operators, built-in variables and a number of functions that are commonly used in procedural content generation, such as sine, random and perlin noise. This echos the approach of programming fragment shaders from scratch, somewhat like in GLSLSandbox or ShaderToy. In fact, anything that was created on those websites can be adapted to utomata, as they are all based on the same underlying language - GLSL. However, This approach is not Cellular Automata, as it lacks a crucial ingredient - the **neighbourhood**. This section will introduce how to use neighbourhoods in our program and will demonstrate how this can lead to emergent, as opposed to procedural patterns.
+The examples in the previous section made use of simple operations to control the colors of individual cells procedurally. This was done by using static vectors, mathematical operators, built-in variables and a number of functions that are commonly used in procedural content generation, such as sine, random and perlin noise.
+
+However, these approaches are not yet considered CA's because they lack a crucial ingredient - the **neighbourhood**. This section will introduce how to incorporate neighbourhoods in the transition function and will demonstrate how this can lead to emergent, as opposed to procedurally generated patterns.
 
 ##### V
-The built-in variable **V** (for Value) holds the cell's state. That is, if the transition function sets a new value for each cell, **V** keeps its current value for us to use in that transition. Consider the following:
+The built-in variable **V** (Value) holds the cell's current state. That is, if the transition function sets a new value for each cell- **V** keeps its current value for us to use in that same transition. Consider the following:
 
 ```GLSL
 frc(add( V , 0.01 ))
 ```
-The transition function above takes the current value of each cell and adds 0.01 to all 4 components. The result is then stripped to its fractional part by using the unary operator - frc(), thus creating a looping mechanism.
+The transition function above takes the current value of each cell and adds 0.01 to all 4 components. The result is then stripped to its fractional part by using the unary operator - frc(), thus creating a looping function.
 
-<!-- ```GLSL
-setup = vec(noise(cell.xy*3));
-update = vec(frc(V.r + 0.01));
-``` -->
 
-##### Outer-Totalistic Neighbourhoods
 
-Just as each cell can access its own value, it can also access the values of other cells. The function **U(x,y)** returns the current state of any cell. The X and Y parameters are coordinates relative to the cell. Such that U(0,0) is the same as V, U(0, -1) is refers to the one directly above the it, and U(0, 1) is its adjacent neighbour on the right.
+#### 5. Configuration <a name="config"></a>
 
-```GLSL
-// calculate the sum of the 4 adjacent neighbours (Von Neumann Neighbourhood)
-vec4 VNtotal = U(-1,0) + U(0, -1) + U( 1, 0) + U(0,1);
-// simple blur transition using avarage
-update = div(VNtotal, 4);
-// make the pen 30 pixels wide
-pen.w = 30;
+CA's are often chaotic systems; extremely sensitive to initial conditions. The initial state of a system is called the *configuration* and it plays a vital role in the system's behaviour. You can set the system's configuraion using the setup method of by setting the setup variable. Consider the following:
+
+```js
+// configure to all black initial state:
+uto.setup("vec(0.0)");
 ```
-Accessing neighbour values can yield incredible complexity to the system, as it can bring rise to feedback loops in cell behaviours. Note that even though all cells execute the exact same transition function, they get different results because their neighbourhoods are different.
-
-```GLSL
-// configure to random RGB
-setup = vec(random(1),random(2),random(3));
-
-// obtain a random coordinate between -2 and 2 using perlin noise
-float nx = noise( (cell.xy*2) +time*0.01)*4-2;
-float ny = noise( (cell.xy*-2) +time*0.01)*4-2;
-
-// round up the coordinates and use them to get a neighbouring value.
-update = U(rnd(nx), rnd(ny));
-```
-The transition function above uses perlin noise for obtaining the value of a random neighbour and then adopts it, as is, as the new state of the cell. The consistency of the perlin noise function causes distinct clusters to emerge as different regions of the system pull towards the same direction.
-
-
-
-#### 5. Applying a Configuration <a name="config"></a>
-
-
-
-```GLSL
-// configure to a previously defined config function
-uto.setup();
-
-// configure to a white initial state:
-uto.setup("vec(1.0)");
-
+```js
 // configure to a random RGB color
 uto.setup("rand(1.0, 2.0, 3.0)");
-
+```
+```js
 // configure to a random binary state with 10% white
 uto.setup("stp(rand(), 0.1)");
-
-// configure using perlin noise
-uto.setup("nois(cell.xy)");
-
 ```
-
-
-CA's are often chaotic systems; extremely sensitive to initial conditions. The initial state of a system is called the *configuration* and it plays a vital role in its behaviour. In utomata this can be configured using the setup variable or the setup method. Consider the following:
-
-```GLSL
-// configure to a random value (greyscale)
-setup = vec(random());
+```js
+// reset to a previously defined configuration
+uto.setup();
 ```
-
 ```GLSL
-// configure to a random value (RGB)
-setup = vec(random(1), random(2), random(3));
-```
-
-```GLSL
-// configure to random binary (10% white)
-setup = vec( stp(random(), 0.1));
-```
-
-```GLSL
-// configure to black with a white dot at the center
-setup = vec( stp(dst(vec2(0.5), cell.xy), cell.w ));
+// set the transition manually using the setup and update variables
+setup  = vec(rand()); // random greyscale
+update = div(V4, 4.0); // blur filter
 ```
 
 
@@ -581,6 +506,55 @@ A cell can also access individual values of other cells using *absolute* coordin
 add(V, get(crsr.x, crsr.y))
 ```
 
+### Functions <a name="funcs"></a>
+
+#### ``set(x, y)``
+Set the value of any cell to vec(1.0).
+NB: You can multiply set(x,y) by any value to set the cell at x,y to it that value.
+
+```GLSL
+// set the center cell to a random value
+update += set(0.5, 0.5) * rand(1., 2., 3.);
+```
+
+#### ``rand(seed)``
+Return a random number between 0 and 1. The rand function takes an optional numerical seed value. utomata uses a rudimentary pseudorandom number generator with a unique seed per cell. If multiple random numbers are needed - use a unique seed for each call.
+
+```GLSL
+// configure to a random RGB vector
+setup = rand(1., 2., 3.);
+```
+
+#### ``nois(x, y)``
+Return the [perlin noise](https://en.wikipedia.org/wiki/Perlin_noise) z value for a given x and y coordinate.
+
+```GLSL
+// move along a perlin noise landscape using the cursor
+update = vec(noise(cell.xy + crsr.xy*10.));
+```
+
+### Variables <a name="vars"></a>
+
+#### ``grid.xy``
+The grid variable holds the (non-normalized) width and height of the system, such that grid.x equals the number of columns and grid.y equals the number of rows.
+
+#### ``cell.xyw``
+The cell variable holds the normalized x and y coordinates of each cell.
+cell.z and cell.w hold maximal size of each cell: max(1.0/grid.x, 1.0/grid.y)
+
+#### ``crsr.xyz``
+The crsr variable holds the current normalized x and y coordinates of the mouse cursor. crsr.z is 1. when the mouse is pressed and 0. otherwise.
+
+#### ``pcrsr.xy``
+The pcrsr variable holds the previous normalized x and y coordinates of the mouse cursor.
+
+#### ``time``
+The time variable counts the number of steps since the system was initialized.
+
+```GLSL
+// create moving bars using sin and stp function
+update = vec( stp(sin(cell.x*100.0 + time*0.1), 0));
+```
 
 ### Operators <a name="ops"></a>
 
@@ -699,53 +673,3 @@ Return the arc cosine function of **a**
 
 #### ``atn(a)``
 Return the arc tangent cosine function of **a**
-
-### Functions <a name="funcs"></a>
-
-#### ``set(x, y)``
-Set the value of any cell to vec(1.0).
-NB: You can multiply set(x,y) by any value to set the cell at x,y to it that value.
-
-```GLSL
-// set the center cell to a random value
-update += set(0.5, 0.5) * rand(1., 2., 3.);
-```
-
-#### ``rand(seed)``
-Return a random number between 0 and 1. The rand function takes an optional numerical seed value. utomata uses a rudimentary pseudorandom number generator with a unique seed per cell. If multiple random numbers are needed - use a unique seed for each call.
-
-```GLSL
-// configure to a random RGB vector
-setup = rand(1., 2., 3.);
-```
-
-#### ``nois(x, y)``
-Return the [perlin noise](https://en.wikipedia.org/wiki/Perlin_noise) z value for a given x and y coordinate.
-
-```GLSL
-// move along a perlin noise landscape using the cursor
-update = vec(noise(cell.xy + crsr.xy*10.));
-```
-
-### Variables <a name="vars"></a>
-
-#### ``grid.xy``
-The grid variable holds the (non-normalized) width and height of the system, such that grid.x equals the number of columns and grid.y equals the number of rows.
-
-#### ``cell.xyw``
-The cell variable holds the normalized x and y coordinates of each cell.
-cell.z and cell.w hold maximal size of each cell: max(1.0/grid.x, 1.0/grid.y)
-
-#### ``crsr.xyz``
-The crsr variable holds the current normalized x and y coordinates of the mouse cursor. crsr.z is 1. when the mouse is pressed and 0. otherwise.
-
-#### ``pcrsr.xy``
-The pcrsr variable holds the previous normalized x and y coordinates of the mouse cursor.
-
-#### ``time``
-The time variable counts the number of steps since the system was initialized.
-
-```GLSL
-// create moving bars using sin and stp function
-update = vec( stp(sin(cell.x*100.0 + time*0.1), 0));
-```

@@ -142,7 +142,6 @@ function utomata(_wid, _hei, _canvasId)
 
     if(_conf !== undefined){
       params.config = processPgm(_conf, false);
-      console.log(params.config);
     }
 
     if(params.useInput){
