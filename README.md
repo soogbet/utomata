@@ -35,7 +35,23 @@
     * [Binary Operators](#binary)
     * [Misc](#misc)
 
-## Basic usage <a name="basic"></a>
+
+
+# Introduction <a name="intro"></a>
+
+[Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) (CA) is a family of algorithms featuring discrete entities *(cells)* that continuously interact with one another. Typically, the cells are organised as a fixed, two dimensional grid. At regular intervals *(time steps)*, each cell calculates its new value *(state)* using a mathematical or logical formula *(transition function)*, while consulting the states of cells around it *(neighbourhood)*. This causes a feedback loop from which complex, higher-order structures may emerge.
+
+There are countless possible transition functions, most of which quickly drive the system towards either uniformity or noise. However, there are also (countless still) functions that result in the emergence of coherent structures that posses interesting, beautiful and potentially even useful patterns of behaviour.
+
+Utomata is Javascript/WebGL framework for exploration and study of novel cellular automata algorithms. It is designated for cross-disciplinary research with an emphasis on computational arts and artificial life. It's light weight, dependency free, hardware accelerated and easy to embed in any web page. Utomata's minimalist functional syntax can express any algorithm up to outer totalistic, any-neighbour, 4D continuous state CA's.
+
+
+# Programming Guide <a name="guide"></a>
+
+#### 0. Getting started <a name="create"></a>
+
+Utomata can work in any HTML page. To get started create a new text file using a code editor such as [atom](https://atom.io/), paste the following snippet and save it as: uto1.html. Then open the file using a web browser.
+NB: you can also follow this guide using the [sandbox](https://soogbet.github.io/utomata/), or in [utomata.net](https://utomata.net)
 
 ```html
 <!DOCTYPE html>
@@ -53,79 +69,61 @@
 </html>
 ```
 
-# Introduction <a name="intro"></a>
-
-[Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) (CA) is a family of algorithms featuring discrete entities *(cells)* that continuously interact with one another. Typically, the cells are organised as a fixed, two dimensional grid. At regular intervals *(time steps)*, each cell calculates its new value *(state)* using a mathematical or logical formula *(transition function)*, while consulting the states of cells around it *(neighbourhood)*. This causes a feedback loop from which complex, higher-order structures may emerge.
-
-There are countless possible transition functions, most of which quickly drive the system towards either uniformity or noise. However, there are also (countless still) functions that result in the emergence of coherent structures that posses interesting, beautiful and potentially even useful patterns of behaviour.
-
-Utomata is Javascript/WebGL framework for exploration and study of novel cellular automata algorithms. It is designated for cross-disciplinary research with an emphasis on computational arts and artificial life. It's light weight, dependency free, hardware accelerated and easy to embed in any web page. Utomata's minimalist functional syntax can express any algorithm up to outer totalistic, any-neighbour, 4D continuous state CA's.
-
-
-# Programming Guide <a name="guide"></a>
-
-#### 1. Creating an HTML page <a name="create"></a>
-
-Utomata can work in any HTML page. To get started, create a new text file with the following text:
-
-```html
-<!DOCTYPE html>
-<html>
-   <body>
-   </body>
-   <script src="http://soogbet.gitbub.io/utomata/utomata.js"></script>
-</html>
-```
-Saving this file with a .html extension and opening it in a browser will tell it to render an empty page which has access to utomata library.
-
-#### 2. Instantiating utomata <a name="instance"></a>
-
-Add the following script tag after the first script:
-
-```HTML
-<script type="text/javascript">
-  var uto = new utomata(256, 256);
-</script>
-```
-This second script creates a new instance of utomata and stores it in a variable called *uto*. Our new system consists of 256 rows and 256 columns of cells (65,536 cells in total), and is now ready for work. A utomata system can be set to any size, however, powers of two (2, 4, 16, 32, ...) are generally faster and very large systems (4K+) require dedicated graphics hardware in order to run smoothly.
-
-#### 3. Applying a transition function <a name="trans"></a>
-
-Now that we have set up our page and our system, we may ask utomata to have all of its cells do something at regular intervals. Add the following line to the second script tag:
+#### 1. Transition Function <a name="trans"></a>
 
 ```js
 uto.run("vec( 1.0, 0.0, 0.0 )");
 ```
-The run() method accepts a transition function that is applied to every cell in the system, (up to) 60 times per-second *(fps)*. Note that this rule is not a javascript function but a string containing instructions in a special syntax that runs on the graphics card. This is what allows utomata to calculate large systems at high frame rates.
 
-Utomata uses four dimensional vectors to describe cell states as RGBA color. the vec() function thus always returns a 4D vector. Each component in the above vector conforms to a corresponding color component - red, green and blue. So the above transition function asks for full red, no green and no blue, resulting in a static uniformly red system. For now, we will ignore the alpha channel and just consider RGB color. Note that even though the system appears static - each one of its cells actually chooses that red color 60 times every second. Here are a number of other simple transition functions:
+The run() command expects a transition function that is to be applied to every cell in the system, (up to) 60 times per-second. Note that the transition function is not a javascript function but a string containing instructions in a special syntax that runs on the graphics card. This is what allows utomata to calculate large systems at high frame rates.
+
+utomata uses four dimensional vectors to describe cell states as RGBA color. the vec() function thus always returns a 4D vector. Each component in the above vector conforms to a corresponding color component - red, green and blue. So the above transition function asks for full red, no green and no blue, resulting in a static uniformly red system. For now, we will ignore the alpha channel and just consider RGB color. Note that even though the system appears static - each one of its cells actually chooses that red color 60 times every second. Here are a number of other simple transition functions:
 
 ```js
+// Provideing just one value to vec applies it to all 3 components
 uto.run("vec( 1.0 )");
 ```
-Provideing just one value to vec applies it to all 3 components
 
 ```js
+// Any RGB color. values above 1.0 or below 0.0 are clamped.
 uto.run("vec(0.98, 0.5 , 0.34)");
 ```
-Any RGB color. values above 1.0 or below 0.0 are clamped.
 
 ```js
+// Set to a random value at each frame
 uto.run("vec( rand() )");
 ```
-Set to a random value at each frame
+
+
+#### 2. Variables
+
+utomata comes with a number of built in variables.
+NB: We will now only focus on the transition function that goes into uto.run(). you can use the following snippet:
+
 
 ```js
-uto.run("vec(cell.x, cell.y, 0.0 )");
+var uto = new  utomata(256, 256);
+uto.run(`
+  --your-code-here--
+  `);
 ```
-Use the x and y coordinate of the cell to set its red and green values
+
+```GLSL
+// Use the x and y coordinate of the cell to set its red and green values
+vec(cell.x, cell.y, 0.)
+```
+
+```GLSL
+//
+vec(crsr.x, crsr.y, 0.)
+```
+
+```GLSL
+// Use the cursor position to move along a perlin noise landscape
+uto.run("vec(nois(cell.xy crsr.xy)))");
+```
 
 
-
-<!-- Cells in a utomata system have a continuous, normalized 4D state. under the hood, they are calculated as GLSL fragment shaders, but utomata uses a higher level functional syntax for expressing the transition function applied to each cell.
-All operators are able to mix vector dimensions in order to increase the range of valid programs. Of course, program validity does not ensure that the program produces useful, or even remotely coherent results; most possible programs emphatically do not.
-
-The return value for all operators is always a 4 dimensional vector, however, the actual output of the system - how it translates a 4D state into colour, depends on the global stateDimension setting listed above. -->
 
 #### Operators
 
@@ -139,7 +137,7 @@ Below is a collection of simple transition functions to play around with:
 
 ```GLSL
 // calculate the distance from the cursor
-vec(dst(cell.xy, cursor.xy))
+vec(dst(cell.xy, crsr.xy))
 ```
 ```GLSL
 // create horizontal waves using the sine function and the time-step variable
@@ -277,6 +275,7 @@ setup = vec( stp(dst(vec2(0.5), cell.xy), cell.w ));
 
 
 #### Elementary Automata <a name="elementary"></a>
+
 
 
 #### Game of Life <a name="GOL"></a>
@@ -555,21 +554,187 @@ console.log( uto.getCursorY() );
 
 ## Language Reference <a name="ref"></a>
 
-### Data Types <a name="types"></a>
 
-#### float
+### Neighbourhood <a name="vars"></a>
 
-#### vec(a, b, c, d)
-<!-- Return a vector value. This operator accepts 1,2,3 or 4 float values but always returns a 4D vector.
-vec(a) >> vec4(a, a, a ,a);
-vec(a, b) >> vec4(a, a, a ,b);
-vec(a, b, c) >> vec4(a, b, c, 1.0);
-vec(a, b, c, d) >> vec4(a, b, c, d); -->
+#### Totalistic Neighbourhoods
+
+##### ``V, V1, V2, V3, V4, V5, V6, V7, V8, V9, V24, V25``
+
+Many cellular automata algorithms use a *totalistic neighbourhood*. This means that each cell refers to its adjacent cells only by summing up their state values and using the total in its transition function.
+
+utomata has a number of built-in values for commonly used totalistic neighbourhood types. You can may use any combination of these in the same transition function. The following diagram illustrates all available ones. all of these return a 4D vector representing the sum RGBA values of the corresponding neighbours.
+NB: the value of the cell itself is also considered as a neighbourhood type.
 
 
-### Variables <a name="vars"></a>
+```GLSL
+- - - | - + - | - + - | + + + | - + -
+- + - | - - - | - + - | - - - | + - +
+- - - | - - - | - - - | - - - | - + -
+V       V1      V2      V3     V4
 
-#### V, V1 V2, ..., V9
+- + - | + + + | + + + | + + + | + + +
++ + + | - - - | - + - | + - + | + + +
+- + - | + + + | + + + | + + + | + + +
+V5      V6      V7      V8      V9
+
++ + + + + | + + + + +
++ + + + + | + + + + +
++ + - + + | + + + + +
++ + + + + | + + + + +
++ + + + + | + + + + +
+V24         V25
+```
+
+#### Outer-Totalistic Neighbourhoods
+
+##### ``U(x,y)``
+
+A cell can also access the individual values of other cells using *relative* coordinates. The *U(x,y)* function returns the current state of any cell in the system relative to self, so that: U(0,0) is the same as V, U(0, -1.0) refers to the cell directly above, and U(0, 1.0) is the adjacent neighbour on the right. you can use the U(x,y) function to construct outer-totalistic transition functions or custom totalistic neighbourhoods.
+
+```GLSL
+// Von-Neumann Neighbourhood (same as V4)
+vec4 VN = U(-1,0) + U(0, -1) + U( 1, 0) + U(0,1);
+// only diagonal neighbours
+vec4 Diag = U(-1., -1.) + U( 1., -1.) + U(-1., 1.) + U( 1., 1.);
+```
+
+##### ``get(x,y)``
+
+A cell can also access individual values of other cells using *absolute* coordinates. In this case the x and y coordinates signify cell positions between top-left (0, 0) and bottom-right (1,1).
+
+```GLSL
+// use the value of the cell pointed by the cursor
+add(V, get(crsr.x, crsr.y))
+```
+
+
+### Operators
+
+utomata uses a functional programming paradigm. At its core are a set of operators that operate on floating point 4D vectors.
+
+
+#### ``vec(a, b, c, d)``
+Return a 4D vector using parameters. This operator accepts 1,2,3 or 4 float values and always returns a 4D vector. Consider the following scheme:
+
+```GLSL
+vec(a) >> vec4(a, a, a ,a)
+vec(a, b) >> vec4(a, a, a ,b)
+vec(a, b, c) >> vec4(a, b, c, 1.0)
+vec(a, b, c, d) >> vec4(a, b, c, d)
+```
+
+### Binary operators <a name="binary"></a>
+
+For binary operators, utomata will always return a 4D vector regardless of input. This may sometimes be confusing as the input may be a float, a vec or one float and one vec. Consider the following scheme:
+
+```GLSL
+op(f1, f2) >> vec(op(f1, f2), op(f1, f2), op(f1, f2), op(f1, f2))
+op(V1, V2) >> vec(op(V1.r, V2.r), op(V1.g, V2.g), op(V1.b, V2.b), op(V1.a, V2.a))
+op(f, V)   >> vec(op(f, V.r), op(f,V.g), op(f,V.b), op(f,V.a))
+op(V, f)   >> vec(op(V.r, f), op(V.g, f), op(V.b, f), op(V.a, f))
+```
+
+#### ``add(a, b)``
+Return the sum of **a** and **b**.
+
+#### ``sub(a, b)``
+Subtract **b** from **a**
+
+#### ``mlt(a, b)``
+Multiply **a** by **b**
+
+#### ``div(a, b)``
+Divide **a** by **b**
+
+#### ``pow(a, b)``
+Raise **a** to the power of **b**
+
+#### ``mod(a, b)``
+Return the remainder of **a** divided by **b**
+
+#### ``stp(a, b)``
+Return **vec(1.0)** if **b** is larger than **a**, otherwise return **vec(0)**
+
+#### ``eql(a, b)``
+Return **vec(1.0)** if **b** is equal to **a**, otherwise return **vec(0)**
+
+#### ``min(a, b)``
+Return the minimal value of **b** and **a**
+
+#### ``max(a, b)``
+Return the maximal value of **b** and **a**
+
+#### ``dot(a, b)``
+Return the dot product **a** and **b**
+
+#### ``dst(a, b)``
+Return the distance between **a** and **b**
+
+#### ``atn(a, b)``
+Return the two component arc tangent of **a** and **b**
+
+### Unary operators <a name="unary"></a>
+
+For Unary operators utomata uses a similar approach to the one above. It appplies the operator on each component of the input and returns the result as a 4D vector. It follows the following scheme:
+```GLSL
+
+op(f)              >> vec(op(f), op(f), op(f) ,op(f))
+op(f1, f2)         >> vec(op(f1), op(f1), op(f1) ,op(f2))
+op(f1, f2, f3)     >> vec(op(f1), op(f2), op(f3) , 1.0)
+op(f1, f2, f3, f4) >> vec(op(f1), op(f2), op(f3) , op(f4))
+op(V)              >> vec(op(V.r), op(V.g), op(V.b) ,op(V.a))
+```
+#### ``rnd(a)``
+Rounded values of **a**
+
+#### ``cil(a)``
+Round up values of **a**
+
+#### ``flr(a)``
+Round down values of **a**
+
+#### ``sqt(a)``
+Return the Square root of **a**
+
+#### ``log(a)``
+Return the natural logarithm of **a**
+#### ``sgn(a)``
+
+Return the sign of **a** (-1. / 0. / 1. )
+#### ``frc(a)``
+
+Return the fractional part of **a**
+#### ``nrm(a)``
+
+Return the normalized vector of **a**
+
+#### ``sin(a)``
+Return the sine function of **a**
+
+#### ``cos(a)``
+Return the cosine function of **a**
+
+#### ``tan(a)``
+Return the tangent function of **a**
+
+#### ``asn(a)``
+Return the arc sine function of **a**
+
+#### ``acs(a)``
+Return the arc cosine function of **a**
+
+#### ``atn(a)``
+Return the arc tangent cosine function of **a**
+
+### Functions <a name="misc"></a>
+
+#### ``set(a, b)``
+
+#### ``rand(seed)``
+
+#### ``nois(x, y)``
+
 
 #### grid
 
@@ -578,54 +743,3 @@ vec(a, b, c, d) >> vec4(a, b, c, d); -->
 #### crsr
 
 #### pcrsr
-
-
-### Binary operators <a name="binary"></a>
-
-Utomata is designed to work as a functional programming paradigm. At its core are a set op numerical operators that operate on floating point numbers and 2,3 and 4D vectors interchangeably. For unary operators this is trivial, as the operator's return value always matches its parameter. However, for binary operators the return value works as follows:
-
-* If
-* The dimension of the return value always matches the first of its two parameters.
-
-#### add(a, b)
-
-Add two values and return the result as a 4D vector.
-
-#### sub(a, b)
-#### mlt(a, b)
-#### div(a, b)
-#### pow(a, b)
-#### mod(a, b)
-#### stp(a, b)
-#### eql(a, b)
-#### min(a, b)
-#### max(a, b)
-#### dot(a, b)
-#### dst(a, b)
-
-### Unary operators <a name="unary"></a>
-
-#### cil(a)
-#### flr(a)
-#### rnd(a)
-#### sqt(a)
-#### log(a)
-#### sgn(a)
-#### frc(a)
-#### nrm(a)
-#### sin(a)
-#### cos(a)
-#### tan(a)
-#### asn(a)
-#### acs(a)
-#### atn(a)
-
-### Misc <a name="misc"></a>
-
-#### U(x, y)
-
-#### val(a, b)
-
-#### random(seed = null)
-
-#### noise(position.xy)
