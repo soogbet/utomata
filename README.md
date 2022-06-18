@@ -43,14 +43,14 @@ A Javascript/webGL framework for [Cellular Automata](https://en.wikipedia.org/wi
 
 There are countless possible transition functions, most of which quickly drive the system towards either uniformity or noise. However, there are also (countless still) functions that result in the emergence of coherent structures that posses interesting, beautiful and potentially even useful patterns of behaviour.
 
-Utomata is Javascript/WebGL framework for exploration and study of novel cellular automata algorithms. It is designated for cross-disciplinary research with an emphasis on computational arts and artificial life. It's light weight, dependency free, hardware accelerated and easy to embed in any web page. Utomata's minimalist functional syntax can express any algorithm up to outer totalistic, any-neighbour, 4D continuous state CA's.
+utomata is Javascript/WebGL framework for exploration and study of novel cellular automata algorithms. It is designated for cross-disciplinary research with an emphasis on computational arts and artificial life. It's light weight, dependency free, hardware accelerated and easy to embed in any web page. utomata's minimalist functional syntax can express any algorithm up to outer totalistic, any-neighbour, 4D continuous state CA's.
 
 
 # Programming Guide <a name="guide"></a>
 
 #### 1. Getting started <a name="create"></a>
 
-Utomata can work in any HTML page. To get started create a new text file using a code editor such as [atom](https://atom.io/), paste the following snippet and save it as: uto1.html. Then open the file using a web browser.
+utomata can work in any HTML page. To get started create a new text file using a code editor such as [atom](https://atom.io/), paste the following snippet and save it as: uto1.html. Then open the file using a web browser.
 NB: you can also follow this guide using the [sandbox](https://soogbet.github.io/utomata/), or in [utomata.net](https://utomata.net)
 
 ```html
@@ -239,11 +239,11 @@ update = add(frc(V), vec( diffR * hood.r  - rgg + ( F*(1.0 - V.r)), diffG * hood
 
 ## API <a name="api"></a> <a name="methods"></a>
 
-#### Utomata(width, height) <a name="methods"></a>
+#### utomata(width, height) <a name="methods"></a>
 The constructor creates a new instance of utomata and appends a canvas element of the same size to the body HTML tag.
 
 ```js
-var uto = new Utomata(1024, 1024);
+var uto = new utomata(1024, 1024);
 ```
 
 #### setup(config)
@@ -317,14 +317,14 @@ uto.zoom(0.25);
 ```
 
 #### edge(type)
-Utomata has two ways to treat the cells which are at the egde of the system (for example the first row, which has no cells above it). "CLAMP" means that whenever a cell at the edge looks-up a neighbour that isn't there - the result will be 0. "REPEAT" means that the look-up will wrap around the other side of the system so that, for instance, the cell directly ABOVE the one at (0,0) is the cell at (0,1). Note that "REAPEAT" only works for systems whose width and height are powers of two. Calling the edge method will reset the system to its configuration.
+utomata has two ways to treat the cells which are at the egde of the system (for example the first row, which has no cells above it). "CLAMP" means that whenever a cell at the edge looks-up a neighbour that isn't there - the result will be 0. "REPEAT" means that the look-up will wrap around the other side of the system so that, for instance, the cell directly ABOVE the one at (0,0) is the cell at (0,1). Note that "REAPEAT" only works for systems whose width and height are powers of two. Calling the edge method will reset the system to its configuration.
 
 ```js
 uto.edge("REPEAT");
 ```
 
 #### input(img)
-Utomata accepts an optional static input image. It can be used both in the configuration rule and also in the program itself using the I value and I() function. The input must be a reference to an HTML <img> element.
+utomata accepts an optional static input image. It can be used both in the configuration rule and also in the program itself using the I value and I() function. The input must be a reference to an HTML <img> element.
 
 ```js
 // set input image from the document
@@ -338,7 +338,7 @@ uto.config("vec(0.0)");
 ```
 
 #### seed(n)
-Utomata uses an internal pseudorandom number generator. The seed value can be set for getting deterministic results from the rand() function.
+utomata uses an internal pseudorandom number generator. The seed value can be set for getting deterministic results from the rand() function.
 
 ```js
 uto.seed(4.2342562);
@@ -353,7 +353,7 @@ uto.tile(2,2);
 ```
 
 #### setUniform(key, value)
-Utomata can make use of external variables to allow input from UI elements, external API's, sensors, etc. These are known as uniforms because their value is the same for all cells in the system. Uniforms are entered as key-value pairs, and once entered can be used inside the transition function as float variables. Changing a value for an existing key works the same way as inserting it.
+utomata can make use of external variables to allow input from UI elements, external API's, sensors, etc. These are known as uniforms because their value is the same for all cells in the system. Uniforms are entered as key-value pairs, and once entered can be used inside the transition function as float variables. Changing a value for an existing key works the same way as inserting it.
 
 ```HTML
 <input type="range" min="0" max="1.0"  step="0.01" value=".5" onchange="uto.setVar('redValue', this.value)" >
