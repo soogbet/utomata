@@ -172,7 +172,7 @@ function utomata(_wid, _hei, _canvasId)
 
   this.alpha = function(a){
 
-    if(a === "0"){
+    if(parseInt(a) == 0){
       params.alpha = "0.0";
     }else{
       params.alpha = "1.0";
@@ -1375,7 +1375,6 @@ function utomata(_wid, _hei, _canvasId)
       return texture2D( backbuffer, vec2(pos.x, pos.y) );
     }
 
-
     // set a coordinate to a color
     vec4 set(float _x, float _y, vec4 c){
       vec2 st = gl_FragCoord.xy / resolution.xy;
@@ -1385,11 +1384,27 @@ function utomata(_wid, _hei, _canvasId)
 
     // set a coordinate to 1.0
     vec4 set(float _x, float _y){
-      vec2 st = gl_FragCoord.xy / resolution.xy;
-      float rat = resolution.x / resolution.y;
-      vec4 cell = vec4( st.x, st.y, max(1.0/resolution.x, 1.0/resolution.y), max(1.0/resolution.x, 1.0/resolution.y) );
 
-      return vec( stp(dst(vec2(_x + cell.w/2.0, _y + cell.w/2.0), cell.xy), cell.w/2.0/rat ));
+      vec2  uv = gl_FragCoord.xy / resolution.xy;
+      vec2 grid = vec2(resolution.x, resolution.y);
+      vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
+
+      // float rat = grid.x / grid.y;
+      // float col = flr(cell.x*tiles.x)/tiles.x;
+      // float row = flr(cell.y*tiles.y)/tiles.y;
+      // from U >> col + mod(cell.x +_x*cell.w, 1.0/tiles.x)  , row + mod(cell.y + _y*cell.w, 1.0/tiles.y)  ;
+      //return vec( stp(dst(vec2(_x + cell.w/2.0, _y + cell.w/2.0), cell.xy), cell.w/2.0/rat )); // without tiling
+
+      vec2 p = vec2(_x,_y);
+      vec2 tile = vec2(1./tiles.x, 1./tiles.y); // already has a uniform
+      vec2 coord = vec2(mod(cell.x , tile.x), mod(cell.y , tile.y));
+
+      return vec(stp(tile.x*p.x - cell.w, coord.x)*
+         stp(coord.x, tile.x*p.x + cell.w)*
+         stp(tile.y*p.y - cell.w, coord.y)*
+         stp(coord.y, tile.y*p.y + cell.w)
+      );
+
     }
 
     // set a coordinate to 1.0
@@ -1411,6 +1426,7 @@ function utomata(_wid, _hei, _canvasId)
       vec2  uv = gl_FragCoord.xy / resolution.xy;
       vec2 grid = vec2(resolution.x, resolution.y);
       vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
+
       float col = flr(cell.x*tiles.x)/tiles.x;
       float row = flr(cell.y*tiles.y)/tiles.y;
 
@@ -1463,6 +1479,17 @@ function utomata(_wid, _hei, _canvasId)
         vec4 crsr = vec4(mouse.x , mouse.y, mouseDown, 0.0);
         vec4 pcrsr = vec4(pmouse.x , pmouse.y, 0.0, 0.0);
 
+        // specific neighbours
+        vec4 U1 = U(-1., -1.);
+        vec4 U2 = U(0., -1.);
+        vec4 U3 = U(1., -1.);
+        vec4 U4 = U(-1., 0.);
+        vec4 U5 = U(0., 0.);
+        vec4 U6 = U(1., 0.);
+        vec4 U7 = U(-1., 1.);
+        vec4 U8 = U(0., 1.);
+        vec4 U9 = U(1., 1.);
+
         // neighbourhood shortcuts
         vec4 V =  U(0.,0.);
         vec4 V1 =  U(0.,-1.);
@@ -1476,6 +1503,7 @@ function utomata(_wid, _hei, _canvasId)
         vec4 V9 = V + V8;
         vec4 V24 = V8 + U(-2., -2.) + U(-1., -2.) + U(0., -2.) + U(1., -2.) + U(2., -2.) + U(-2., -1.) + U(2., -1.) +  U(-2., 0.) + U(2., 0.) +  U(-2., 1.) + U(2., 1.) +  U(-2., 2.) + U(-1., 2.) + U(0., 2.) + U(1., 2.) + U(2., 2.);
         vec4 V25 = V24 + V;
+
         vec4  setup = `+ params.config+`;
         vec4 update = V;
     `;
