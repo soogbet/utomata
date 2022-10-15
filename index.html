@@ -243,6 +243,8 @@ liorbengai 2020
 				        <li class="dropdownItem">Height(<input size="4" type="text" id="inputHei" value="1024">)</li>
 				        <li class="dropdownItem">Fps(<input size="2" type="text"  id="inputFps" name="" value="60">)</li>
 				        <li class="dropdownItem">Zoom(<input size="2" type="text"  id="inputZoom" name="" value="1">)</li>
+								<li class="dropdownItem">TilesX(<input size="2" type="text"  id="inputTilesX" name="" value="1">)</li>
+								<li class="dropdownItem">TilesY(<input size="2" type="text"  id="inputTilesY" name="" value="1">)</li>
 				      </ul>
 				    </div>
 
@@ -275,7 +277,7 @@ liorbengai 2020
 setup = vec(stp(0.9, rand()));
 
 // run Conway's game of life
-update = add(eql(3, V9), mlt(eql(4, V9), V));
+update = add(eql(3, V9), eql(3, V8));
 </textarea>
 		</div>
 
@@ -350,7 +352,7 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 		var useLocalStorage = true;
 		var uto;
 		var pgm = "";
-		var wid = 1024, hei = 1024, zoom = 2, fps = 60;
+		var wid = 1024, hei = 1024, zoom = 2, fps = 60, tilesX = 1, tilesY = 1;
 		var errors = [];
 
 		var param = getParameterByName("wid");
@@ -376,6 +378,16 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 		if(param !== null){
 			pgm = param;
 			editor.setValue(pgm);
+		}
+		param = getParameterByName("tilesX");
+		if(param !== null){
+			tilesX = param;
+			editor.setValue(tilesX);
+		}
+		param = getParameterByName("tilesY");
+		if(param !== null){
+			tilesY = param;
+			editor.setValue(tilesY);
 		}
 
 		param = getParameterByName("restore");
@@ -405,6 +417,7 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 
 		function reset(){
 			uto.size( wid, hei);
+			uto.tiles(tilesX, tilesY);
 			runPgm(true);
 			uto.zoom(zoom);
 			uto.fps(fps);
@@ -515,6 +528,17 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 		        fps = localStorage.getItem("utomataFps");
 						document.getElementById("inputFps").value = fps;
 		      }
+					if(localStorage.getItem("utomataTilesX") !== null){
+		        // load last program
+		        tilesX = localStorage.getItem("utomataTilesX");
+						document.getElementById("inputTilesX").value = tilesX;
+		      }
+					if(localStorage.getItem("utomataTilesY") !== null){
+		        // load last program
+		        tilesY = localStorage.getItem("utomataTilesY");
+						document.getElementById("inputTilesY").value = tilesY;
+		      }
+
 				}else{
 					return;
 				}
@@ -577,6 +601,18 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 				hei = this.value;
 				reset();
 			});
+
+			document.getElementById("inputTilesX").addEventListener('change',function(){
+				tilesX = this.value;
+				reset();
+			});
+
+			document.getElementById("inputTilesY").addEventListener('change',function(){
+				tilesY = this.value;
+				reset();
+			});
+
+
 
 			document.getElementById("inputFont").addEventListener('change',function(){
 			editor.setFontSize(this.value +"px");
@@ -850,6 +886,8 @@ update = add(eql(3, V9), mlt(eql(4, V9), V));
 					localStorage.setItem("utomataHeight", hei);
 					localStorage.setItem("utomataZoom", zoom);
 					localStorage.setItem("utomataFps", fps);
+					localStorage.setItem("utomataTilesX", tilesX);
+					localStorage.setItem("utomataTilesY", tilesY);
 			  }
 			}
 

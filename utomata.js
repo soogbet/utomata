@@ -1377,8 +1377,10 @@ function utomata(_wid, _hei, _canvasId)
 
     // set a coordinate to a color
     vec4 set(float _x, float _y, vec4 c){
-      vec2 st = gl_FragCoord.xy / resolution.xy;
-      vec4 cell = vec4( st.x, st.y, max(1.0/resolution.x, 1.0/resolution.y), max(1.0/resolution.x, 1.0/resolution.y) );
+      vec2  uv = gl_FragCoord.xy / resolution.xy;
+      vec2 grid = vec2(resolution.x, resolution.y);
+      vec4 cell = vec4( uv.x, uv.y, 1.0/grid.x, 1.0/grid.y );
+
       return c * vec( stp(dst(vec2(0.5 + cell.w/2.0), cell.xy), cell.w/2.0 ));
     }
 
@@ -1387,22 +1389,32 @@ function utomata(_wid, _hei, _canvasId)
 
       vec2  uv = gl_FragCoord.xy / resolution.xy;
       vec2 grid = vec2(resolution.x, resolution.y);
-      vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
+      vec4 cell = vec4( uv.x, uv.y, 1.0/grid.x, 1.0/grid.y );
+
 
       // float rat = grid.x / grid.y;
       // float col = flr(cell.x*tiles.x)/tiles.x;
       // float row = flr(cell.y*tiles.y)/tiles.y;
       // from U >> col + mod(cell.x +_x*cell.w, 1.0/tiles.x)  , row + mod(cell.y + _y*cell.w, 1.0/tiles.y)  ;
-      //return vec( stp(dst(vec2(_x + cell.w/2.0, _y + cell.w/2.0), cell.xy), cell.w/2.0/rat )); // without tiling
+      // return vec( stp(dst(vec2(_x + cell.w/2.0, _y + cell.w/2.0), cell.xy), cell.w/2.0/rat )); // without tiling
 
-      vec2 p = vec2(_x,_y);
+      vec2 p = vec2(_x + 0.0001,_y + 0.0001);
       vec2 tile = vec2(1./tiles.x, 1./tiles.y); // already has a uniform
       vec2 coord = vec2(mod(cell.x , tile.x), mod(cell.y , tile.y));
 
-      return vec(stp(tile.x*p.x - cell.w, coord.x)*
-         stp(coord.x, tile.x*p.x + cell.w)*
-         stp(tile.y*p.y - cell.w, coord.y)*
-         stp(coord.y, tile.y*p.y + cell.w)
+      // without tiles
+      // return vec(
+      //    stp(p.x - cell.z/2.0, cell.x)*
+      //    stp(cell.x, p.x + cell.z/2.0)*
+      //    stp(p.y - cell.w/2.0, cell.y)*
+      //    stp(cell.y, p.y + cell.w/2.0)
+      // );
+
+      return vec(
+         stp(tile.x*p.x - cell.z/2.0, coord.x)*
+         stp(coord.x, tile.x*p.x + cell.w/2.0)*
+         stp(tile.y*p.y - cell.w/2.0, coord.y)*
+         stp(coord.y, tile.y*p.y + cell.w/2.0)
       );
 
     }
@@ -1425,14 +1437,16 @@ function utomata(_wid, _hei, _canvasId)
     vec4 U(float _x, float _y){
       vec2  uv = gl_FragCoord.xy / resolution.xy;
       vec2 grid = vec2(resolution.x, resolution.y);
-      vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
+      vec4 cell = vec4( uv.x, uv.y, 1.0/grid.x, 1.0/grid.y );
 
       float col = flr(cell.x*tiles.x)/tiles.x;
       float row = flr(cell.y*tiles.y)/tiles.y;
 
-      vec4 res = get( col + mod(cell.x +_x*cell.w, 1.0/tiles.x)  , row + mod(cell.y + _y*cell.w, 1.0/tiles.y) );
+      vec4 res = get( col + mod(cell.x +_x*cell.z, 1.0/tiles.x)  , row + mod(cell.y + _y*cell.w, 1.0/tiles.y) );
 
-      // return texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(_x, _y)));
+      // this one works fine but without tiles
+      // vec4 res = texture2D(backbuffer, (gl_FragCoord.xy / resolution.xy) + ( (1.0/resolution.xy) * vec2(_x, _y)));
+
       return res;
     }
 
@@ -1475,7 +1489,8 @@ function utomata(_wid, _hei, _canvasId)
         // VARS
         vec2  uv = gl_FragCoord.xy / resolution.xy;
         vec2 grid = vec2(resolution.x, resolution.y);
-        vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
+        // vec4 cell = vec4( uv.x, uv.y, max(1.0/grid.x, 1.0/grid.y), max(1.0/grid.x, 1.0/grid.y) );
+        vec4 cell = vec4( uv.x, uv.y, 1.0/grid.x, 1.0/grid.y );
         vec4 crsr = vec4(mouse.x , mouse.y, mouseDown, 0.0);
         vec4 pcrsr = vec4(pmouse.x , pmouse.y, 0.0, 0.0);
 
