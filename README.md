@@ -1,6 +1,6 @@
 
 # utomata
-A Javascript/webGL framework for [Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) experiments.Primarily designed for interactive explorations of emergent virtual structures in computational art and design, modelling, simulation and procedural content generation.
+A Javascript/webGL framework for [Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) experiments. utomata is primarily designed for interactive explorations of emergent virtual structures in computational art and procedural content generation.
 
 <!-- Examples collection on codepen -->
 <!-- other links ? -->
@@ -8,8 +8,7 @@ A Javascript/webGL framework for [Cellular Automata](https://en.wikipedia.org/wi
 
 * [utomata.net](https://utomata.net)
 * [sandbox](https://soogbet.github.io/utomata/)
-* [lib](https://soogbet.github.io/utomata/utomata.js)
-* [labofbabel.org](http://labofbabel.org)
+* [lib](https://utomata.net/lib)
 
 ### Table of Contents
 
@@ -39,7 +38,7 @@ A Javascript/webGL framework for [Cellular Automata](https://en.wikipedia.org/wi
 
 ## Introduction <a name="intro"></a>
 
-[Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) (CA) is a family of algorithms featuring discrete entities *(cells)* that continuously interact with one another. Typically, the cells are organised as a fixed, two dimensional grid. At regular intervals *(time steps)*, each cell calculates its new value *(state)* using a mathematical or logical formula *(transition function)*, while consulting the states of cells around it *(neighbourhood)*. This causes a feedback loop from which complex, higher-order structures may emerge.
+[Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) (CA) is a family of algorithms featuring a regular grid of discrete entities —- *(cells)* -- that continuously interact with one another. Typically, the cells are organised as a fixed, two dimensional grid. At regular intervals *(time steps)*, each cell calculates its new value *(state)* using a mathematical or logical formula *(transition function)*, while consulting the states of cells around it *(neighbourhood)*. This causes a feedback loop from which complex, higher-order structures may emerge.
 
 There are countless possible transition functions, most of which quickly drive the system towards either uniformity or noise. However, there are also (countless still) functions that result in the emergence of coherent structures that posses interesting, beautiful and potentially even useful patterns of behaviour.
 

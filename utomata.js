@@ -56,6 +56,7 @@ function utomata(_wid, _hei, _canvasId)
     avgFps: 60,
     stepLimit: -1,
     completionCallback: undefined,
+    parentElement: undefined,
     functions: "",
     alpha: "1.0",
     tileColumns: 1,
@@ -84,9 +85,12 @@ function utomata(_wid, _hei, _canvasId)
 
   var hiddenImage = null;
 
-  var parentDiv = undefined;
+  var parentElem = undefined;
 
   var canvasId = "mainCanvas";
+
+  var checkPointCallback;
+  var callbackFreq;
 
   if(_canvasId !== undefined){
     canvasId = _canvasId;
@@ -159,12 +163,11 @@ function utomata(_wid, _hei, _canvasId)
   this.setStepLimit = function(_step, _callback = null){
 
     if(_step < 1){
-        params.stepLimit = _step;
+        params.stepLimit = -1;
     }else{
         params.stepLimit = _step;
     }
     if(_callback !== null){
-
       params.completionCallback = _callback;
     }
   }
@@ -309,12 +312,26 @@ function utomata(_wid, _hei, _canvasId)
     return params.config;
   }
 
-  this.setParent = function(parent){
-    parentDiv = parent;
-    parentDiv.appendChild(canvas);
+  this.setStep = function(s){
+    params.step = s;
+  }
+  this.getStep = function(){
+    return params.step;
   }
 
+  this.getStepLimit = function(){
+    return params.stepLimit;
+  }
 
+  this.setParent = function(parent){
+    parentElem = parent;
+    parentElem.appendChild(canvas);
+    params.parentElement = parent;
+  }
+
+  this.getParent = function(){
+    return parentElem;
+  }
 
   this.setCanvasId = function(id){
     canvasId = id;
@@ -331,8 +348,8 @@ function utomata(_wid, _hei, _canvasId)
     infoText = elem;
   };
 
-  this.saveImg = function(){
-    saveImage('download');
+  this.saveImg = function(ImgName = null){
+    saveImage('download', ImgName);
   }
 
   this.getImg = function(){
@@ -340,9 +357,77 @@ function utomata(_wid, _hei, _canvasId)
   }
 
 
+
+  this.getImgData = function(){
+    var offscreenCanvas = document.createElement("canvas");
+    offscreenCanvas.width = canvas.width;
+    offscreenCanvas.height = canvas.height;
+    var ctx = offscreenCanvas.getContext("2d");
+    ctx.drawImage(canvas,0,0);
+
+    return ctx.getImageData(0,0, offscreenCanvas.width, offscreenCanvas.height).data;
+  }
+
+  this.getRawData = function(){
+    var res = [];
+    var offscreenCanvas = document.createElement("canvas");
+    offscreenCanvas.width = canvas.width;
+    offscreenCanvas.height = canvas.height;
+    var ctx = offscreenCanvas.getContext("2d");
+    ctx.drawImage(canvas,0,0);
+    var data = ctx.getImageData(0,0, offscreenCanvas.width, offscreenCanvas.height).data;
+
+    var currRow = [];
+    let row = 0;
+    let col = 0;
+    
+    // convert to a 2D array with cell objects
+    for(let i = 0; i < data.length; i += 4) {
+      currRow.push({r: data[i]/ 255, g:data[i + 1]/ 255 , b: data[i + 2]/ 255, a: data[i + 3]/ 255});
+      col++;
+      if(col >= canvas.width){
+        col = 0;
+        row++;
+        res.push(currRow);
+        currRow = [];
+      }
+    }
+    return res;
+  }
+
+  this.test = function(testFunc){
+    // var offscreenCanvas = document.createElement("canvas");
+    // offscreenCanvas.width = canvas.width;
+    // offscreenCanvas.height = canvas.height;
+    // var ctx = offscreenCanvas.getContext("2d");
+    // ctx.drawImage(canvas,0,0);
+    // var data = ctx.getImageData(0,0, offscreenCanvas.width, offscreenCanvas.height).data;
+
+    // var arr = [];
+    // var currRow = [];
+    // let row = 0;
+    // let col = 0;
+    
+    // // convert to a 2D array with cell objects
+    // for(let i = 0; i < data.length; i += 4) {
+    //   currRow.push({r: data[i]/ 255, g:data[i + 1]/ 255 , b: data[i + 2]/ 255, a: data[i + 3]/ 255});
+    //   col++;
+    //   if(col >= canvas.width){
+    //     col = 0;
+    //     row++;
+    //     arr.push(currRow);
+    //     currRow = [];
+    //   }
+    // }
+    return testFunc(this.getRawData());
+  }
+
+  this.setCheckPoint = function(callback, freq){
+    checkPointCallback = callback;
+    callbackFreq = freq;
+  }
+
   // PRIVATE METHODS
-
-
 
   function init() {
 
@@ -358,10 +443,12 @@ function utomata(_wid, _hei, _canvasId)
     canvas.style.setProperty("image-rendering", "crisp-edges");
     canvas.style.setProperty("cursor", "crosshair");
 
-    if(parentDiv === undefined){
+    // console.log(canvas.getContext("2d"));
+
+    if(parentElem === undefined){
         document.body.appendChild( canvas );
     }else{
-        parentDiv.appendChild( canvas );
+        parentElem.appendChild( canvas );
     }
 
 
@@ -584,11 +671,8 @@ function utomata(_wid, _hei, _canvasId)
   //LOAD AN IMAGE
   function loadImage(img) {
 
-
     params.input = img;
     params.input.onload = function() {
-
-
 
       var width = this.width;
       var height = this.height;
@@ -864,7 +948,17 @@ function utomata(_wid, _hei, _canvasId)
 
     }
 
+
+    // if registered a callback at the correct interal - call it
+    if(checkPointCallback !== undefined){
+      if(params.step % callbackFreq == 0){
+        checkPointCallback(params.step);
+      }
+    }
+
     params.step += 1;
+
+
   }
 
   function htmlEncode(str){
@@ -913,7 +1007,7 @@ function utomata(_wid, _hei, _canvasId)
   }
 
 
-  function saveImage(returnType) {
+  function saveImage(returnType, ImgName) {
 
     var dataURL = canvas.toDataURL("image/png");
 
@@ -931,8 +1025,12 @@ function utomata(_wid, _hei, _canvasId)
         window.open(dataURL, "Canvas Image");
         break;
       case 'download':
+        let downloadLink = document.createElement('a');
+        downloadLink.setAttribute('download', ImgName);
         dataURL = dataURL.replace("image/png", "image/octet-stream");
-        document.location.href = dataURL;
+        downloadLink.setAttribute('href', dataURL);
+        downloadLink.click();
+        // document.location.href = dataURL;
         break;
     }
   }
