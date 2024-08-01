@@ -2,13 +2,11 @@
 # utomata
 A Javascript/webGL framework for [Cellular Automata](https://en.wikipedia.org/wiki/Cellular_automaton) experiments. utomata is primarily designed for interactive explorations of emergent virtual structures in computational art and procedural content generation.
 
-<!-- Examples collection on codepen -->
-<!-- other links ? -->
-<!-- a touchdesigner COMP implementation -->
-
-* [utomata.net](https://utomata.net)
-* [sandbox](https://soogbet.github.io/utomata/)
-* [lib](https://utomata.net/lib)
+<!-- * [utomata.net](https://utomata.net) -->
+* [online IDE](https://utomata.net/ide)
+* [Visual IDE](https://utomata.net/gl)
+<!-- * [Algorithm collection](https://utomata.net/lib) -->
+<!-- a touchdesigner tox implementation -->
 
 ### Table of Contents
 
